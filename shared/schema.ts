@@ -16,7 +16,7 @@ export const consentTypeEnum = pgEnum('consent_type', ['gdpr', 'ai_usage', 'data
 export const companies = pgTable("companies", {
   id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
   type: companyTypeEnum("type").notNull(),
-  parentId: uuid("parent_id").references(() => companies.id),
+  parentId: uuid("parent_id"),
   name: varchar("name", { length: 255 }).notNull(),
   domain: varchar("domain", { length: 255 }),
   logoUrl: text("logo_url"),
