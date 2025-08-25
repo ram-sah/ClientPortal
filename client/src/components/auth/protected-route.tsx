@@ -1,4 +1,4 @@
-import { Navigate } from 'wouter';
+import { Redirect } from 'wouter';
 import { useAuth } from '../../hooks/use-auth';
 
 interface ProtectedRouteProps {
@@ -18,7 +18,7 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
   }
 
   if (!token || !user) {
-    return <Navigate to="/login" replace />;
+    return <Redirect to="/login" replace />;
   }
 
   if (requiredRoles && !requiredRoles.includes(user.role)) {

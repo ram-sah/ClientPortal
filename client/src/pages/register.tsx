@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Navigate, Link } from 'wouter';
+import { Redirect, Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -24,7 +24,7 @@ export default function Register() {
 
   // Redirect if already logged in
   if (user) {
-    return <Navigate to="/" replace />;
+    return <Redirect to="/" replace />;
   }
 
   const createRequestMutation = useMutation({
