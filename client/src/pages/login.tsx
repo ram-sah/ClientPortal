@@ -21,7 +21,12 @@ export default function Login() {
     if (user && !authLoading) {
       setLocation('/');
     }
-  }, [user, authLoading, setLocation]);
+  }, [user, authLoading]);
+
+  // Don't render form if already logged in
+  if (user && !authLoading) {
+    return null;
+  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();

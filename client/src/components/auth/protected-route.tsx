@@ -1,4 +1,5 @@
-import { Redirect } from 'wouter';
+import { useEffect } from 'react';
+import { useLocation } from 'wouter';
 import { useAuth } from '../../hooks/use-auth';
 
 interface ProtectedRouteProps {
@@ -8,6 +9,13 @@ interface ProtectedRouteProps {
 
 export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps) {
   const { user, isLoading, token } = useAuth();
+  const [, setLocation] = useLocation();
+
+  useEffect(() => {
+    if (!isLoading && (!token || !user)) {
+      setLocation('/login');
+    }
+  }, [isLoading, token, user]);
 
   if (isLoading) {
     return (
@@ -18,7 +26,7 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
   }
 
   if (!token || !user) {
-    return <Redirect to="/login" replace />;
+    return null; // Return nothing while redirecting
   }
 
   if (requiredRoles && !requiredRoles.includes(user.role)) {
