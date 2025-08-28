@@ -49,6 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     const { user, token: newToken } = await authApi.login({ email, password });
     setToken(newToken);
+    // Force update the auth headers immediately
+    updateAuthHeaders(newToken);
     await refetch();
   };
 

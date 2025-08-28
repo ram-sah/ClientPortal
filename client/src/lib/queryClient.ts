@@ -30,7 +30,9 @@ export async function apiRequest(
   
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
-    console.log('🔐 Frontend: Adding auth token to request');
+    console.log('🔐 Frontend: Adding auth token to request:', token.substring(0, 20) + '...');
+  } else {
+    console.log('❌ Frontend: No auth token available for request');
   }
   
   const res = await fetch(url, {
