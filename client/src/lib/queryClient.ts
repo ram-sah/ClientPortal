@@ -15,6 +15,9 @@ export async function apiRequest(
   url: string,
   data?: unknown | undefined,
 ): Promise<Response> {
+  console.log(`🌐 Frontend: Making ${method} request to ${url}`);
+  console.log('📤 Frontend: Request data:', data);
+  
   const res = await fetch(url, {
     method,
     headers: data ? { "Content-Type": "application/json" } : {},
@@ -22,6 +25,7 @@ export async function apiRequest(
     credentials: "include",
   });
 
+  console.log(`📥 Frontend: Response status: ${res.status} ${res.statusText}`);
   await throwIfResNotOk(res);
   return res;
 }

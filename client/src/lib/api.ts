@@ -70,7 +70,9 @@ export const accessRequestApi = {
   },
 
   createAccessRequest: async (data: Partial<AccessRequest>): Promise<AccessRequest> => {
+    console.log('🚀 Frontend: About to send access request:', data);
     const response = await apiRequest('POST', '/api/access-requests', data);
+    console.log('✅ Frontend: Access request successful');
     return response.json();
   },
 
