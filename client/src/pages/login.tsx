@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { useLocation, Link } from 'wouter';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -15,13 +15,14 @@ export default function Login() {
   const { login, user, isLoading: authLoading } = useAuth();
   const { toast } = useToast();
   const [, setLocation] = useLocation();
+  const redirectedRef = useRef(false);
 
-  // Redirect if already logged in
-  useEffect(() => {
-    if (user && !authLoading) {
-      setLocation('/');
-    }
-  }, [user, authLoading]);
+  // Redirect if already logged in - only once
+  if (user && !authLoading && !redirectedRef.current) {
+    redirectedRef.current = true;
+    setLocation('/');
+    return null;
+  }
 
   // Don't render form if already logged in
   if (user && !authLoading) {

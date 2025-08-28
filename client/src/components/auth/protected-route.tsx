@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useRef } from 'react';
 import { useLocation } from 'wouter';
 import { useAuth } from '../../hooks/use-auth';
 
@@ -10,12 +10,7 @@ interface ProtectedRouteProps {
 export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps) {
   const { user, isLoading, token } = useAuth();
   const [, setLocation] = useLocation();
-
-  useEffect(() => {
-    if (!isLoading && (!token || !user)) {
-      setLocation('/login');
-    }
-  }, [isLoading, token, user]);
+  const redirectedRef = useRef(false);
 
   if (isLoading) {
     return (
@@ -23,6 +18,13 @@ export function ProtectedRoute({ children, requiredRoles }: ProtectedRouteProps)
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-primary-500"></div>
       </div>
     );
+  }
+
+  // Redirect to login if not authenticated - only once
+  if (!isLoading && (!token || !user) && !redirectedRef.current) {
+    redirectedRef.current = true;
+    setLocation('/login');
+    return null;
   }
 
   if (!token || !user) {
