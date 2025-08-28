@@ -41,11 +41,23 @@ export default function Login() {
 
     try {
       await login(email, password);
-      // Navigation will happen automatically via the AuthProvider
-    } catch (error) {
       toast({
-        title: 'Login failed',
-        description: error instanceof Error ? error.message : 'Invalid credentials',
+        title: "Login Successful",
+        description: "Welcome back!",
+      });
+      // Navigation will happen automatically via the AuthProvider
+    } catch (error: any) {
+      // Extract error message from API response
+      let errorMessage = 'Invalid email or password';
+      if (error?.message) {
+        errorMessage = error.message;
+      } else if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      }
+      
+      toast({
+        title: 'Login Failed',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
