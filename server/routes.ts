@@ -86,7 +86,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/auth/logout", requireAuth, async (req, res) => {
-    // In a production app, you might want to blacklist the token
+    // Log the logout activity
+    await storage.logActivity(req.user!.id, 'LOGOUT', undefined, undefined, { ip: req.ip });
     res.json({ message: "Logged out successfully" });
   });
 

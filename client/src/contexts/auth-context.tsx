@@ -60,13 +60,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const logout = () => {
+    // Call logout API first while we still have the token
+    if (token) {
+      authApi.logout().catch(() => {
+        // Ignore errors on logout
+      });
+    }
+    
+    // Then clear local state
     localStorage.removeItem('auth_token');
     setTokenState(null);
     updateAuthHeaders(null);
-    // Optionally call logout API
-    authApi.logout().catch(() => {
-      // Ignore errors on logout
-    });
   };
 
   // Update API headers when token changes
