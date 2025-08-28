@@ -287,12 +287,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/access-requests", async (req, res) => {
     try {
+      console.log("🔄 Access request attempt:", JSON.stringify(req.body, null, 2));
+      
       const requestData = insertAccessRequestSchema.parse(req.body);
+      console.log("✅ Schema validation passed");
       
       const request = await storage.createAccessRequest(requestData);
+      console.log("✅ Request created with ID:", request.id);
       
       res.status(201).json(request);
     } catch (error) {
+      console.error("❌ Access request failed:");
+      console.error("Error type:", error.constructor.name);
+      console.error("Error message:", error instanceof Error ? error.message : "Unknown error");
+      console.error("Full error:", error);
+      
       res.status(400).json({ error: error instanceof Error ? error.message : "Failed to create access request" });
     }
   });

@@ -43,6 +43,10 @@ export default function Register() {
       });
     },
     onError: (error) => {
+      console.error('Access request error details:', error);
+      console.error('Error type:', error.constructor.name);
+      console.error('Error message:', error instanceof Error ? error.message : 'Unknown error');
+      
       toast({
         title: 'Error',
         description: error instanceof Error ? error.message : 'Failed to submit request',

@@ -5,6 +5,15 @@ import { initializeDatabase } from "./init-db";
 
 const app = express();
 app.use(express.json());
+
+// Log all requests for debugging
+app.use((req, res, next) => {
+  console.log(`${new Date().toISOString()} ${req.method} ${req.url}`);
+  if (req.method === 'POST') {
+    console.log('Request body:', JSON.stringify(req.body, null, 2));
+  }
+  next();
+});
 app.use(express.urlencoded({ extended: false }));
 
 app.use((req, res, next) => {
