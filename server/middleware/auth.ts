@@ -31,25 +31,33 @@ export async function verifyToken(token: string): Promise<{ userId: string } | n
 }
 
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
+  console.log('🔐 Auth: Checking authorization header...');
   const authHeader = req.headers.authorization;
   
   if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    console.log('❌ Auth: No token provided or wrong format');
     return res.status(401).json({ error: 'No token provided' });
   }
 
   const token = authHeader.split(' ')[1];
+  console.log('🔐 Auth: Token received:', token.substring(0, 20) + '...');
+  
   const payload = await verifyToken(token);
   
   if (!payload) {
+    console.log('❌ Auth: Invalid token');
     return res.status(401).json({ error: 'Invalid token' });
   }
 
+  console.log('🔐 Auth: Token valid, userId:', payload.userId);
   const user = await storage.getUser(payload.userId);
   
   if (!user || !user.isActive) {
+    console.log('❌ Auth: User not found or inactive');
     return res.status(401).json({ error: 'User not found or inactive' });
   }
 
+  console.log('✅ Auth: User authenticated:', user.email, 'role:', user.role);
   req.user = user;
   
   // Log the access
@@ -79,5 +87,15 @@ export function requireRole(...roles: string[]) {
 }
 
 export function requireOwnerOrAdmin(req: Request, res: Response, next: NextFunction) {
-  return requireRole('owner', 'admin')(req, res, next);
+  console.log('🔐 RequireOwnerOrAdmin: Starting middleware chain');
+  requireAuth(req, res, (err) => {
+    if (err) {
+      console.log('❌ RequireOwnerOrAdmin: Auth failed');
+      return;
+    }
+    
+    console.log('✅ RequireOwnerOrAdmin: Auth passed, checking role');
+    // After authentication, check role
+    requireRole('owner', 'admin')(req, res, next);
+  });
 }

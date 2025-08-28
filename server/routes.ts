@@ -276,7 +276,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // Access Request routes
-  app.get("/api/access-requests", requireOwnerOrAdmin, async (req, res) => {
+  app.get("/api/access-requests", requireAuth, async (req, res) => {
+    // Check if user has owner or admin role
+    if (req.user!.role !== 'owner' && req.user!.role !== 'admin') {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     try {
       const requests = await storage.getPendingAccessRequests();
       res.json(requests);
@@ -306,7 +310,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.patch("/api/access-requests/:id", requireOwnerOrAdmin, async (req, res) => {
+  app.patch("/api/access-requests/:id", requireAuth, async (req, res) => {
+    // Check if user has owner or admin role
+    if (req.user!.role !== 'owner' && req.user!.role !== 'admin') {
+      return res.status(403).json({ error: 'Insufficient permissions' });
+    }
     try {
       const { id } = req.params;
       const { status, companyId } = req.body;
