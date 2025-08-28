@@ -10,6 +10,8 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
+import { getCurrentAuthToken } from '../contexts/auth-context';
+
 export async function apiRequest(
   method: string,
   url: string,
@@ -18,9 +20,22 @@ export async function apiRequest(
   console.log(`🌐 Frontend: Making ${method} request to ${url}`);
   console.log('📤 Frontend: Request data:', data);
   
+  // Get current auth token and add to headers
+  const token = getCurrentAuthToken();
+  const headers: Record<string, string> = {};
+  
+  if (data) {
+    headers["Content-Type"] = "application/json";
+  }
+  
+  if (token) {
+    headers["Authorization"] = `Bearer ${token}`;
+    console.log('🔐 Frontend: Adding auth token to request');
+  }
+  
   const res = await fetch(url, {
     method,
-    headers: data ? { "Content-Type": "application/json" } : {},
+    headers,
     body: data ? JSON.stringify(data) : undefined,
     credentials: "include",
   });

@@ -3,6 +3,19 @@ import { useQuery } from '@tanstack/react-query';
 import { authApi } from '../lib/api';
 import type { User, AuthState } from '../types/auth';
 
+// Global variable to store the current auth token
+let currentAuthToken: string | null = null;
+
+// Function to get the current auth token for API requests
+export function getCurrentAuthToken(): string | null {
+  return currentAuthToken;
+}
+
+// Function to update auth headers
+function updateAuthHeaders(token: string | null) {
+  currentAuthToken = token;
+}
+
 interface AuthContextType extends AuthState {
   login: (email: string, password: string) => Promise<void>;
   logout: () => void;
@@ -13,7 +26,11 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [token, setTokenState] = useState<string | null>(() => {
-    return localStorage.getItem('auth_token');
+    const storedToken = localStorage.getItem('auth_token');
+    if (storedToken) {
+      updateAuthHeaders(storedToken);
+    }
+    return storedToken;
   });
 
   const { data: user, isLoading, refetch } = useQuery({
@@ -72,23 +89,4 @@ export function useAuth() {
     throw new Error('useAuth must be used within an AuthProvider');
   }
   return context;
-}
-
-// Helper function to update API request headers
-function updateAuthHeaders(token: string | null) {
-  // This is a simple way to update headers globally
-  // In a more complex app, you might want to use an axios instance or similar
-  const originalFetch = window.fetch;
-  window.fetch = function(input: RequestInfo | URL, init?: RequestInit) {
-    const headers = new Headers(init?.headers);
-    
-    if (token && !headers.has('Authorization')) {
-      headers.set('Authorization', `Bearer ${token}`);
-    }
-    
-    return originalFetch(input, {
-      ...init,
-      headers
-    });
-  };
 }
