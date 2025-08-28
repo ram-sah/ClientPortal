@@ -71,6 +71,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     localStorage.removeItem('auth_token');
     setTokenState(null);
     updateAuthHeaders(null);
+    
+    // Force redirect to login page
+    window.location.href = '/login';
   };
 
   // Update API headers when token changes
