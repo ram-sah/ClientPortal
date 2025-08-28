@@ -44,6 +44,7 @@ export default function Login() {
       toast({
         title: "Login Successful",
         description: "Welcome back!",
+        variant: "success",
       });
       // Navigation will happen automatically via the AuthProvider
     } catch (error: any) {
