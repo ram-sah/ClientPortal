@@ -3,6 +3,9 @@ import { QueryClient, QueryFunction } from "@tanstack/react-query";
 async function throwIfResNotOk(res: Response) {
   if (!res.ok) {
     const text = (await res.text()) || res.statusText;
+    console.error(`API Error: ${res.status} ${res.statusText}`);
+    console.error(`Response: ${text}`);
+    console.error(`URL: ${res.url}`);
     throw new Error(`${res.status}: ${text}`);
   }
 }
