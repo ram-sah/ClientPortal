@@ -68,6 +68,21 @@ export class AuthService {
     
     return userWithoutPassword;
   }
+
+  async verifyPassword(email: string, password: string): Promise<boolean> {
+    const user = await storage.getUserByEmail(email);
+    
+    if (!user || !user.passwordHash) {
+      return false;
+    }
+
+    return await bcrypt.compare(password, user.passwordHash);
+  }
+
+  async changePassword(userId: string, newPassword: string): Promise<void> {
+    const passwordHash = await bcrypt.hash(newPassword, 10);
+    await storage.updateUser(userId, { passwordHash });
+  }
 }
 
 export const authService = new AuthService();

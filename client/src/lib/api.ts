@@ -20,6 +20,11 @@ export const authApi = {
     return response.json();
   },
 
+  changePassword: async (data: { currentPassword: string; newPassword: string }): Promise<{ message: string }> => {
+    const response = await apiRequest('POST', '/api/auth/change-password', data);
+    return response.json();
+  },
+
   logout: async (): Promise<void> => {
     await apiRequest('POST', '/api/auth/logout');
   }

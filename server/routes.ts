@@ -51,6 +51,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Change password
+  const changePasswordSchema = z.object({
+    currentPassword: z.string().min(1),
+    newPassword: z.string().min(6)
+  });
+
+  app.post("/api/auth/change-password", requireAuth, async (req, res) => {
+    try {
+      const { currentPassword, newPassword } = changePasswordSchema.parse(req.body);
+      
+      // Verify current password
+      const isValid = await authService.verifyPassword(req.user!.email, currentPassword);
+      if (!isValid) {
+        return res.status(400).json({ error: "Current password is incorrect" });
+      }
+      
+      // Update password
+      await authService.changePassword(req.user!.id, newPassword);
+      
+      res.json({ message: "Password changed successfully" });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to change password" });
+    }
+  });
+
   app.get("/api/auth/me", requireAuth, async (req, res) => {
     try {
       const user = await authService.getCurrentUser(req.user!.id);
