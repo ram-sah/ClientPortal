@@ -10,7 +10,7 @@ export function getRoleDisplayName(role: string): string {
   const roleMap = {
     'owner': 'Owner',
     'admin': 'Admin',
-    'client_editor': 'Client Editor',
+    'client': 'Client',
     'partner': 'Partner'
   };
   
@@ -21,19 +21,18 @@ export function getRoleDisplayName(role: string): string {
 export function getAvailableRoles(currentUserRole: string): Array<{value: string, label: string}> {
   if (currentUserRole === 'owner') {
     return [
-      { value: 'owner', label: 'Owner' },
       { value: 'admin', label: 'Admin' },
-      { value: 'client_editor', label: 'Client Editor' },
+      { value: 'client', label: 'Client' },
       { value: 'partner', label: 'Partner' }
     ];
   } else if (currentUserRole === 'admin') {
     return [
-      { value: 'client_editor', label: 'Client Editor' },
+      { value: 'client', label: 'Client' },
       { value: 'partner', label: 'Partner' }
     ];
-  } else if (currentUserRole === 'partner') {
+  } else if (currentUserRole === 'client') {
     return [
-      { value: 'client_editor', label: 'Client Editor' }
+      { value: 'partner', label: 'Partner' }
     ];
   }
   

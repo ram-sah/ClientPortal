@@ -5,7 +5,7 @@ import { z } from "zod";
 
 // Enums
 export const companyTypeEnum = pgEnum('company_type', ['owner', 'partner', 'client', 'sub']);
-export const userRoleEnum = pgEnum('user_role', ['owner', 'admin', 'client_editor', 'partner']);
+export const userRoleEnum = pgEnum('user_role', ['owner', 'admin', 'client', 'partner']);
 export const accessLevelEnum = pgEnum('access_level', ['edit', 'view']);
 export const projectStatusEnum = pgEnum('project_status', ['active', 'completed', 'archived', 'draft']);
 export const auditStatusEnum = pgEnum('audit_status', ['draft', 'review', 'published', 'archived']);

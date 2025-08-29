@@ -107,7 +107,7 @@ export default function AccessRequests() {
         return 'bg-red-100 text-red-800';
       case 'partner':
         return 'bg-orange-100 text-orange-800';
-      case 'client_editor':
+      case 'client':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';

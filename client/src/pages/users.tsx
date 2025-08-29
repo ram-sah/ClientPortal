@@ -84,7 +84,7 @@ export default function Users() {
     inviteUserMutation.mutate(data);
   };
 
-  const filteredUsers = users.filter(user => {
+  const filteredUsers = (users as any[]).filter((user: any) => {
     const matchesSearch = user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase());
@@ -101,7 +101,7 @@ export default function Users() {
         return 'bg-red-100 text-red-800';
       case 'partner':
         return 'bg-orange-100 text-orange-800';
-      case 'client_editor':
+      case 'client':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -113,7 +113,7 @@ export default function Users() {
   };
 
   const getCompanyName = (companyId: string) => {
-    const company = companies.find(c => c.id === companyId);
+    const company = (companies as any[]).find((c: any) => c.id === companyId);
     return company?.name || 'Unknown Company';
   };
 
@@ -142,7 +142,7 @@ export default function Users() {
               <SelectItem value="owner">Owner</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
               <SelectItem value="partner">Partner</SelectItem>
-              <SelectItem value="client_editor">Client Editor</SelectItem>
+              <SelectItem value="client">Client</SelectItem>
             </SelectContent>
           </Select>
 
@@ -152,7 +152,7 @@ export default function Users() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">All Companies</SelectItem>
-              {companies.map((company) => (
+              {(companies as any[]).map((company: any) => (
                 <SelectItem key={company.id} value={company.id}>
                   {company.name}
                 </SelectItem>
@@ -201,7 +201,7 @@ export default function Users() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {companies.map((company) => (
+                          {(companies as any[]).map((company: any) => (
                             <SelectItem key={company.id} value={company.id}>
                               {company.name} ({company.type})
                             </SelectItem>
@@ -330,7 +330,7 @@ export default function Users() {
                       </div>
                       {user.tags && user.tags.length > 0 && (
                         <div className="flex items-center space-x-2 mt-2">
-                          {user.tags.map((tag) => (
+                          {user.tags.map((tag: any) => (
                             <Badge key={tag} variant="outline" className="text-xs">
                               {tag}
                             </Badge>

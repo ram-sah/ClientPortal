@@ -162,9 +162,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const users = await userService.getUsersByCompany(companyId);
         res.json(users);
       } else {
-        // Return users from user's company
+        // Return users from user's company, filtering based on permissions
         const users = await userService.getUsersByCompany(req.user!.companyId);
-        res.json(users);
+        
+        // Filter users based on current user's role - Owner accounts should not appear in Admin/other views
+        let filteredUsers = users;
+        if (req.user!.role !== 'owner') {
+          filteredUsers = users.filter(user => user.role !== 'owner');
+        }
+        
+        res.json(filteredUsers);
       }
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get users" });
@@ -328,7 +335,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           res.json(allAudits);
         } else {
-          // Client Editor users see their company's audits
+          // Client users see their company's audits
           const audits = await auditService.getAuditsByClient(req.user!.companyId);
           res.json(audits);
         }
@@ -357,8 +364,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Access Request routes
   app.get("/api/access-requests", requireAuth, async (req, res) => {
-    // Check if user has owner, admin, or partner role
-    if (req.user!.role !== 'owner' && req.user!.role !== 'admin' && req.user!.role !== 'partner') {
+    // Check if user has owner, admin, or client role (Client can manage Partner)
+    if (req.user!.role !== 'owner' && req.user!.role !== 'admin' && req.user!.role !== 'client') {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
     try {
@@ -391,8 +398,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.patch("/api/access-requests/:id", requireAuth, async (req, res) => {
-    // Check if user has owner, admin, or partner role
-    if (req.user!.role !== 'owner' && req.user!.role !== 'admin' && req.user!.role !== 'partner') {
+    // Check if user has owner, admin, or client role (Client can manage Partner)
+    if (req.user!.role !== 'owner' && req.user!.role !== 'admin' && req.user!.role !== 'client') {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
     try {
@@ -451,7 +458,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const accessRequests = await storage.getPendingAccessRequests();
         pendingApprovals = accessRequests.length;
       } else {
-        // Client Editor users see their company's stats
+        // Client users see their company's stats
         const audits = await auditService.getAuditsByClient(req.user!.companyId);
         completedAudits = audits.filter(a => a.status === 'published').length;
         activeClients = 1; // Current client
