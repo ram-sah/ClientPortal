@@ -14,6 +14,8 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi } from '../lib/api';
 import { useToast } from '../hooks/use-toast';
+import { useAuth } from '../hooks/use-auth';
+import { getRoleDisplayName, getAvailableRoles } from '../lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const inviteUserSchema = z.object({
@@ -31,6 +33,7 @@ export default function Users() {
   const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user: currentUser } = useAuth();
 
   const { data: companies = [] } = useQuery({
     queryKey: ['/api/companies']
@@ -96,15 +99,9 @@ export default function Users() {
         return 'bg-purple-100 text-purple-800';
       case 'admin':
         return 'bg-red-100 text-red-800';
-      case 'client_services':
-      case 'specialty_skills':
-        return 'bg-blue-100 text-blue-800';
-      case 'partner_admin':
-      case 'partner_contributor':
-      case 'partner_viewer':
+      case 'partner':
         return 'bg-orange-100 text-orange-800';
       case 'client_editor':
-      case 'client_viewer':
         return 'bg-green-100 text-green-800';
       default:
         return 'bg-gray-100 text-gray-800';
@@ -144,13 +141,8 @@ export default function Users() {
               <SelectItem value="all">All Roles</SelectItem>
               <SelectItem value="owner">Owner</SelectItem>
               <SelectItem value="admin">Admin</SelectItem>
-              <SelectItem value="client_services">Client Services</SelectItem>
-              <SelectItem value="specialty_skills">Specialty Skills</SelectItem>
-              <SelectItem value="partner_admin">Partner Admin</SelectItem>
-              <SelectItem value="partner_contributor">Partner Contributor</SelectItem>
-              <SelectItem value="partner_viewer">Partner Viewer</SelectItem>
+              <SelectItem value="partner">Partner</SelectItem>
               <SelectItem value="client_editor">Client Editor</SelectItem>
-              <SelectItem value="client_viewer">Client Viewer</SelectItem>
             </SelectContent>
           </Select>
 
@@ -234,14 +226,11 @@ export default function Users() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="admin">Admin</SelectItem>
-                          <SelectItem value="client_services">Client Services</SelectItem>
-                          <SelectItem value="specialty_skills">Specialty Skills</SelectItem>
-                          <SelectItem value="partner_admin">Partner Admin</SelectItem>
-                          <SelectItem value="partner_contributor">Partner Contributor</SelectItem>
-                          <SelectItem value="partner_viewer">Partner Viewer</SelectItem>
-                          <SelectItem value="client_editor">Client Editor</SelectItem>
-                          <SelectItem value="client_viewer">Client Viewer</SelectItem>
+                          {currentUser && getAvailableRoles(currentUser.role).map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
+                              {role.label}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                       <FormMessage />
@@ -321,7 +310,7 @@ export default function Users() {
                           {user.firstName} {user.lastName}
                         </h3>
                         <Badge className={getRoleColor(user.role)}>
-                          {user.role.replace('_', ' ')}
+                          {getRoleDisplayName(user.role)}
                         </Badge>
                         {!user.isActive && (
                           <Badge variant="outline" className="bg-red-50 text-red-600 border-red-200">

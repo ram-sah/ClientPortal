@@ -11,6 +11,7 @@ import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { accessRequestApi, companyApi } from '../lib/api';
 import { useToast } from '../hooks/use-toast';
+import { getRoleDisplayName } from '../lib/utils';
 
 export default function AccessRequests() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -65,7 +66,7 @@ export default function AccessRequests() {
     setIsDetailsDialogOpen(true);
   };
 
-  const filteredRequests = accessRequests.filter(request => {
+  const filteredRequests = (accessRequests as any[]).filter((request: any) => {
     const matchesSearch = request.requesterName.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          request.requesterEmail.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesStatus = statusFilter === 'all' || request.status === statusFilter;
@@ -100,29 +101,28 @@ export default function AccessRequests() {
 
   const getRoleColor = (role: string) => {
     switch (role) {
-      case 'client_editor':
-      case 'client_viewer':
-        return 'bg-green-100 text-green-800';
-      case 'partner_admin':
-      case 'partner_contributor':
-      case 'partner_viewer':
-        return 'bg-orange-100 text-orange-800';
+      case 'owner':
+        return 'bg-purple-100 text-purple-800';
       case 'admin':
         return 'bg-red-100 text-red-800';
+      case 'partner':
+        return 'bg-orange-100 text-orange-800';
+      case 'client_editor':
+        return 'bg-green-100 text-green-800';
       default:
-        return 'bg-blue-100 text-blue-800';
+        return 'bg-gray-100 text-gray-800';
     }
   };
 
   const getCompanyName = (companyId: string | undefined) => {
     if (!companyId) return 'No company specified';
-    const company = companies.find(c => c.id === companyId);
+    const company = (companies as any[]).find((c: any) => c.id === companyId);
     return company?.name || 'Unknown Company';
   };
 
-  const pendingRequests = accessRequests.filter(req => req.status === 'pending');
-  const approvedRequests = accessRequests.filter(req => req.status === 'approved');
-  const deniedRequests = accessRequests.filter(req => req.status === 'denied');
+  const pendingRequests = (accessRequests as any[]).filter((req: any) => req.status === 'pending');
+  const approvedRequests = (accessRequests as any[]).filter((req: any) => req.status === 'approved');
+  const deniedRequests = (accessRequests as any[]).filter((req: any) => req.status === 'denied');
 
   return (
     <AppLayout title="Access Requests" subtitle="Review and manage user access requests">
@@ -239,7 +239,7 @@ export default function AccessRequests() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredRequests.map((request) => (
+          {filteredRequests.map((request: any) => (
             <Card key={request.id} className="hover:shadow-md transition-shadow" data-testid={`request-card-${request.id}`}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -258,7 +258,7 @@ export default function AccessRequests() {
                           <span className="ml-1">{request.status}</span>
                         </Badge>
                         <Badge className={getRoleColor(request.requestedRole)}>
-                          {request.requestedRole.replace('_', ' ')}
+                          {getRoleDisplayName(request.requestedRole)}
                         </Badge>
                       </div>
                       <div className="flex items-center space-x-4 text-sm text-secondary-600">
@@ -341,7 +341,7 @@ export default function AccessRequests() {
                 <div>
                   <label className="text-sm font-medium text-secondary-700">Requested Role</label>
                   <Badge className={getRoleColor(selectedRequest.requestedRole)}>
-                    {selectedRequest.requestedRole.replace('_', ' ')}
+                    {getRoleDisplayName(selectedRequest.requestedRole)}
                   </Badge>
                 </div>
                 <div>

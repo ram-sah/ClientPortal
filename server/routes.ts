@@ -101,7 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(companies);
       } else {
         // Return companies based on user's access level
-        if (req.user!.role === 'owner' || req.user!.role === 'admin') {
+        if (req.user!.role === 'owner' || req.user!.role === 'admin' || req.user!.role === 'partner') {
           const companies = await companyService.getCompaniesByType('client');
           res.json(companies);
         } else {
@@ -316,8 +316,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         res.json(audits);
       } else {
         // Return audits based on user's company type
-        if (req.user!.role === 'owner' || req.user!.role === 'admin') {
-          // Get all audits for owner/admin
+        if (req.user!.role === 'owner' || req.user!.role === 'admin' || req.user!.role === 'partner') {
+          // Get all audits for owner/admin/partner
           const clientCompanies = await companyService.getCompaniesByType('client');
           const allAudits = [];
           
@@ -328,7 +328,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           res.json(allAudits);
         } else {
-          // Client users see their company's audits
+          // Client Editor users see their company's audits
           const audits = await auditService.getAuditsByClient(req.user!.companyId);
           res.json(audits);
         }
@@ -357,8 +357,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Access Request routes
   app.get("/api/access-requests", requireAuth, async (req, res) => {
-    // Check if user has owner or admin role
-    if (req.user!.role !== 'owner' && req.user!.role !== 'admin') {
+    // Check if user has owner, admin, or partner role
+    if (req.user!.role !== 'owner' && req.user!.role !== 'admin' && req.user!.role !== 'partner') {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
     try {
@@ -391,8 +391,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.patch("/api/access-requests/:id", requireAuth, async (req, res) => {
-    // Check if user has owner or admin role
-    if (req.user!.role !== 'owner' && req.user!.role !== 'admin') {
+    // Check if user has owner, admin, or partner role
+    if (req.user!.role !== 'owner' && req.user!.role !== 'admin' && req.user!.role !== 'partner') {
       return res.status(403).json({ error: 'Insufficient permissions' });
     }
     try {
@@ -439,7 +439,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let activeClients = 0;
       let pendingApprovals = 0;
       
-      if (req.user!.role === 'owner' || req.user!.role === 'admin') {
+      if (req.user!.role === 'owner' || req.user!.role === 'admin' || req.user!.role === 'partner') {
         const clientCompanies = await companyService.getCompaniesByType('client');
         activeClients = clientCompanies.length;
         
@@ -451,6 +451,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const accessRequests = await storage.getPendingAccessRequests();
         pendingApprovals = accessRequests.length;
       } else {
+        // Client Editor users see their company's stats
         const audits = await auditService.getAuditsByClient(req.user!.companyId);
         completedAudits = audits.filter(a => a.status === 'published').length;
         activeClients = 1; // Current client

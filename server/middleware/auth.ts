@@ -100,6 +100,20 @@ export function requireOwnerOrAdmin(req: Request, res: Response, next: NextFunct
   });
 }
 
+export function requireOwnerAdminOrPartner(req: Request, res: Response, next: NextFunction) {
+  console.log('🔐 RequireOwnerAdminOrPartner: Starting middleware chain');
+  requireAuth(req, res, (err) => {
+    if (err) {
+      console.log('❌ RequireOwnerAdminOrPartner: Auth failed');
+      return;
+    }
+    
+    console.log('✅ RequireOwnerAdminOrPartner: Auth passed, checking role');
+    // After authentication, check role
+    requireRole('owner', 'admin', 'partner')(req, res, next);
+  });
+}
+
 // Check if user can manage a target user based on role hierarchy
 export async function canManageUser(currentUserId: string, targetUserId?: string, targetRole?: string): Promise<boolean> {
   const currentUser = await storage.getUser(currentUserId);
@@ -120,6 +134,11 @@ export async function canManageUser(currentUserId: string, targetUserId?: string
   // Admin cannot manage owner or other admins
   if (currentUser.role === 'admin') {
     return targetRole !== 'owner' && targetRole !== 'admin';
+  }
+
+  // Partner can only manage client_editor
+  if (currentUser.role === 'partner') {
+    return targetRole === 'client_editor';
   }
 
   // Other roles cannot manage users
