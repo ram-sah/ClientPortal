@@ -58,6 +58,10 @@ export class UserService {
       status: 'pending'
     });
   }
+
+  async deleteUser(id: string): Promise<boolean> {
+    return await storage.deleteUser(id);
+  }
 }
 
 export const userService = new UserService();

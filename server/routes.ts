@@ -1,7 +1,7 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
 import { z } from "zod";
-import { requireAuth, requireOwnerOrAdmin } from "./middleware/auth";
+import { requireAuth, requireOwnerOrAdmin, requireUserManagementPermission, canManageUser } from "./middleware/auth";
 import { authService } from "./services/auth.service";
 import { companyService } from "./services/company.service";
 import { userService } from "./services/user.service";
@@ -171,7 +171,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users", requireOwnerOrAdmin, async (req, res) => {
+  app.post("/api/users", requireUserManagementPermission, async (req, res) => {
     try {
       const userData = registerSchema.parse(req.body);
       
@@ -185,7 +185,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.post("/api/users/invite", requireOwnerOrAdmin, async (req, res) => {
+  app.post("/api/users/invite", requireUserManagementPermission, async (req, res) => {
     try {
       const { email, companyId, role } = req.body;
       
@@ -196,6 +196,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(201).json(accessRequest);
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : "Failed to invite user" });
+    }
+  });
+
+  app.patch("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const updateData = req.body;
+      
+      // Check if user can manage this target user
+      const canManage = await canManageUser(req.user!.id, id);
+      if (!canManage) {
+        return res.status(403).json({ error: 'Insufficient permissions to update this user' });
+      }
+      
+      const user = await userService.updateUser(id, updateData);
+      
+      if (!user) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      await storage.logActivity(req.user!.id, 'UPDATE_USER', 'user', user.id);
+      
+      res.json(user);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to update user" });
+    }
+  });
+
+  app.delete("/api/users/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      // Check if user can manage this target user
+      const canManage = await canManageUser(req.user!.id, id);
+      if (!canManage) {
+        return res.status(403).json({ error: 'Insufficient permissions to delete this user' });
+      }
+      
+      // Prevent users from deleting themselves
+      if (id === req.user!.id) {
+        return res.status(400).json({ error: 'Cannot delete your own account' });
+      }
+      
+      const success = await userService.deleteUser(id);
+      
+      if (!success) {
+        return res.status(404).json({ error: "User not found" });
+      }
+      
+      await storage.logActivity(req.user!.id, 'DELETE_USER', 'user', id);
+      
+      res.json({ message: "User deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to delete user" });
     }
   });
 

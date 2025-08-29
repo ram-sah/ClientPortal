@@ -99,3 +99,47 @@ export function requireOwnerOrAdmin(req: Request, res: Response, next: NextFunct
     requireRole('owner', 'admin')(req, res, next);
   });
 }
+
+// Check if user can manage a target user based on role hierarchy
+export async function canManageUser(currentUserId: string, targetUserId?: string, targetRole?: string): Promise<boolean> {
+  const currentUser = await storage.getUser(currentUserId);
+  if (!currentUser) return false;
+
+  // If we're checking against a specific target user
+  if (targetUserId) {
+    const targetUser = await storage.getUser(targetUserId);
+    if (!targetUser) return false;
+    targetRole = targetUser.role;
+  }
+
+  // Owner can manage all roles
+  if (currentUser.role === 'owner') {
+    return true;
+  }
+
+  // Admin cannot manage owner or other admins
+  if (currentUser.role === 'admin') {
+    return targetRole !== 'owner' && targetRole !== 'admin';
+  }
+
+  // Other roles cannot manage users
+  return false;
+}
+
+// Middleware for user management operations
+export function requireUserManagementPermission(req: Request, res: Response, next: NextFunction) {
+  requireAuth(req, res, async (err) => {
+    if (err) return;
+
+    const { role: targetRole } = req.body;
+    const targetUserId = req.params.id;
+
+    const canManage = await canManageUser(req.user!.id, targetUserId, targetRole);
+    
+    if (!canManage) {
+      return res.status(403).json({ error: 'Insufficient permissions to manage this user role' });
+    }
+
+    next();
+  });
+}
