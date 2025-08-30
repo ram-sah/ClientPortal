@@ -7,6 +7,7 @@ import { companyService } from "./services/company.service";
 import { userService } from "./services/user.service";
 import { projectService } from "./services/project.service";
 import { auditService } from "./services/audit.service";
+import { airtableService } from "./services/airtable.service";
 import { storage } from "./storage";
 import { insertUserSchema, insertCompanySchema, insertProjectSchema, insertDigitalAuditSchema, insertAccessRequestSchema } from "@shared/schema";
 
@@ -127,18 +128,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Airtable data route - must be before :id route
-  app.get("/api/companies/airtable", requireAuth, async (req, res) => {
-    try {
-      const airtableService = (await import('./services/airtable.service')).default;
-      const companies = await airtableService.getCompanies();
-      res.json(companies);
-    } catch (error) {
-      console.error('Airtable fetch error:', error);
-      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch Airtable data" });
-    }
-  });
-
   app.get("/api/companies/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
@@ -157,6 +146,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(company);
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get company" });
+    }
+  });
+
+  // Airtable companies route
+  app.get("/api/companies/airtable", requireAuth, async (req, res) => {
+    try {
+      const tableName = (req.query.table as string) || 'Companies';
+      const companies = await airtableService.getCompanies(tableName);
+      res.json(companies);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get Airtable companies" });
     }
   });
 

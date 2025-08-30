@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Building, Users, MoreVertical, Edit, Trash2, Globe, Mail, Phone, MapPin, RefreshCw } from 'lucide-react';
+import { Plus, Search, Building, Users, MoreVertical, Edit, Trash2, RefreshCw, Database, Cloud, Globe, Mail, Phone, MapPin } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi } from '../lib/api';
@@ -31,6 +31,8 @@ export default function Companies() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [dataSource, setDataSource] = useState<'local' | 'airtable'>('local');
+  const [isRefreshing, setIsRefreshing] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -38,9 +40,9 @@ export default function Companies() {
     queryKey: ['/api/companies']
   });
 
-  // Fetch Airtable data to display client and competitor information
-  const { data: airtableData = [], isLoading: isLoadingAirtable, refetch: refetchAirtable } = useQuery({
-    queryKey: ['/api/companies/airtable']
+  const { data: airtableCompanies = [], isLoading: isLoadingAirtable, refetch: refetchAirtable } = useQuery({
+    queryKey: ['/api/companies/airtable'],
+    enabled: dataSource === 'airtable'
   });
 
   const createCompanyForm = useForm<CreateCompanyForm>({
@@ -77,18 +79,29 @@ export default function Companies() {
     createCompanyMutation.mutate(data);
   };
 
-  // Separate local companies and Airtable data for better display
-  const allCompanies = [...companies, ...airtableData];
-  
-  const filteredLocalCompanies = companies.filter((company: any) => {
+  const handleRefreshAirtable = async () => {
+    setIsRefreshing(true);
+    try {
+      await refetchAirtable();
+      toast({
+        title: 'Data refreshed',
+        description: 'Airtable data has been refreshed successfully.',
+      });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to refresh Airtable data',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+
+  const displayCompanies = dataSource === 'airtable' ? airtableCompanies : companies;
+  const filteredCompanies = (displayCompanies as any[]).filter((company: any) => {
     const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         company.domain?.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesType = typeFilter === 'all' || company.type === typeFilter;
-    return matchesSearch && matchesType;
-  });
-  
-  const filteredAirtableCompanies = airtableData.filter((company: any) => {
-    const matchesSearch = company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         company.domain?.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          company.website?.toLowerCase().includes(searchTerm.toLowerCase());
     const matchesType = typeFilter === 'all' || company.type === typeFilter;
     return matchesSearch && matchesType;
@@ -115,13 +128,8 @@ export default function Companies() {
 
   const getParentCompanyName = (parentId: string | null) => {
     if (!parentId) return null;
-    const parent = allCompanies.find((c: any) => c.id === parentId);
+    const parent = (displayCompanies as any[]).find((c: any) => c.id === parentId);
     return parent?.name;
-  };
-
-  const isFromAirtable = (company: any) => {
-    // Check if company has Airtable-specific fields
-    return company.website || company.contactEmail || company.industry;
   };
 
   return (
@@ -152,6 +160,39 @@ export default function Companies() {
               <SelectItem value="sub">Sub-company</SelectItem>
             </SelectContent>
           </Select>
+
+          {/* Data Source Toggle */}
+          <div className="flex gap-2">
+            <Button
+              variant={dataSource === 'local' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDataSource('local')}
+              data-testid="button-local-data"
+            >
+              <Database className="w-4 h-4 mr-2" />
+              Local
+            </Button>
+            <Button
+              variant={dataSource === 'airtable' ? 'default' : 'outline'}
+              size="sm"
+              onClick={() => setDataSource('airtable')}
+              data-testid="button-airtable-data"
+            >
+              <Cloud className="w-4 h-4 mr-2" />
+              Airtable
+            </Button>
+            {dataSource === 'airtable' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleRefreshAirtable}
+                disabled={isRefreshing}
+                data-testid="button-refresh-airtable"
+              >
+                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+            )}
+          </div>
         </div>
         
         <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -280,7 +321,7 @@ export default function Companies() {
               <div>
                 <p className="text-sm font-medium text-secondary-600">Client Companies</p>
                 <p className="text-2xl font-semibold text-secondary-900">
-                  {companies.filter(c => c.type === 'client').length}
+                  {(displayCompanies as any[]).filter((c: any) => c.type === 'client').length}
                 </p>
               </div>
               <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
@@ -296,7 +337,7 @@ export default function Companies() {
               <div>
                 <p className="text-sm font-medium text-secondary-600">Partner Companies</p>
                 <p className="text-2xl font-semibold text-secondary-900">
-                  {companies.filter(c => c.type === 'partner').length}
+                  {(displayCompanies as any[]).filter((c: any) => c.type === 'partner').length}
                 </p>
               </div>
               <div className="w-12 h-12 bg-orange-50 rounded-lg flex items-center justify-center">
@@ -312,7 +353,7 @@ export default function Companies() {
               <div>
                 <p className="text-sm font-medium text-secondary-600">Sub-companies</p>
                 <p className="text-2xl font-semibold text-secondary-900">
-                  {companies.filter(c => c.type === 'sub').length}
+                  {(displayCompanies as any[]).filter((c: any) => c.type === 'sub').length}
                 </p>
               </div>
               <div className="w-12 h-12 bg-blue-50 rounded-lg flex items-center justify-center">
@@ -323,71 +364,33 @@ export default function Companies() {
         </Card>
       </div>
 
-      {/* Airtable Data Section */}
-      {airtableData.length > 0 && (
-        <div className="mb-8">
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-semibold text-secondary-900">Market Intelligence</h2>
-            <Badge variant="secondary">
-              {airtableData.length} companies from Airtable
-            </Badge>
+      {/* Data Source Indicator */}
+      {dataSource === 'airtable' && (
+        <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between">
+          <div className="flex items-center space-x-2">
+            <Cloud className="w-5 h-5 text-blue-600" />
+            <span className="text-sm font-medium text-blue-900">Viewing data from Airtable</span>
+            {airtableCompanies.length > 0 && (
+              <Badge variant="secondary" className="ml-2">
+                {airtableCompanies.length} records
+              </Badge>
+            )}
           </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {airtableData.map((company: any) => (
-              <Card key={company.id} className="hover:shadow-md transition-shadow border-blue-200">
-                <CardContent className="p-4">
-                  <div className="mb-3">
-                    <h3 className="font-semibold text-secondary-900">{company.name}</h3>
-                    <Badge className={getTypeColor(company.type || 'client')} size="sm">
-                      {company.type || 'Client'}
-                    </Badge>
-                  </div>
-                  
-                  <div className="space-y-2 text-sm text-secondary-600">
-                    {company.website && (
-                      <div className="flex items-center space-x-1">
-                        <Globe className="w-3 h-3 text-secondary-400" />
-                        <a href={company.website} target="_blank" rel="noopener noreferrer" 
-                           className="hover:text-primary-600 underline truncate">
-                          {new URL(company.website).hostname}
-                        </a>
-                      </div>
-                    )}
-                    {company.contactEmail && (
-                      <div className="flex items-center space-x-1">
-                        <Mail className="w-3 h-3 text-secondary-400" />
-                        <span className="truncate">{company.contactEmail}</span>
-                      </div>
-                    )}
-                    {company.contactPhone && (
-                      <div className="flex items-center space-x-1">
-                        <Phone className="w-3 h-3 text-secondary-400" />
-                        <span>{company.contactPhone}</span>
-                      </div>
-                    )}
-                    {company.industry && (
-                      <div className="flex items-center space-x-1">
-                        <Building className="w-3 h-3 text-secondary-400" />
-                        <span>{company.industry}</span>
-                      </div>
-                    )}
-                    {(company.city || company.state) && (
-                      <div className="flex items-center space-x-1">
-                        <MapPin className="w-3 h-3 text-secondary-400" />
-                        <span>{[company.city, company.state].filter(Boolean).join(', ')}</span>
-                      </div>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={handleRefreshAirtable}
+            disabled={isRefreshing || isLoadingAirtable}
+            className="text-blue-600 hover:text-blue-700"
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing || isLoadingAirtable ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
         </div>
       )}
 
-      {/* Local Companies List */}
-      <h2 className="text-lg font-semibold text-secondary-900 mb-4">Internal Companies</h2>
-      {isLoading || isLoadingAirtable ? (
+      {/* Companies List */}
+      {(isLoading || isLoadingAirtable) ? (
         <div className="space-y-4">
           {[1, 2, 3, 4, 5].map((i) => (
             <Card key={i} className="animate-pulse">
@@ -404,7 +407,7 @@ export default function Companies() {
             </Card>
           ))}
         </div>
-      ) : filteredLocalCompanies.length === 0 ? (
+      ) : filteredCompanies.length === 0 ? (
         <Card>
           <CardContent className="p-12 text-center">
             <div className="text-6xl mb-4">🏢</div>
@@ -427,7 +430,7 @@ export default function Companies() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredLocalCompanies.map((company: any) => (
+          {filteredCompanies.map((company) => (
             <Card key={company.id} className="hover:shadow-md transition-shadow" data-testid={`company-card-${company.id}`}>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -445,14 +448,50 @@ export default function Companies() {
                           {company.type.charAt(0).toUpperCase() + company.type.slice(1)}
                         </Badge>
                       </div>
-                      <div className="flex items-center space-x-4 text-sm text-secondary-600">
-                        {company.domain && (
-                          <span>{company.domain}</span>
+                      <div className="flex flex-wrap gap-3 text-sm text-secondary-600">
+                        {dataSource === 'airtable' ? (
+                          <>
+                            {company.website && (
+                              <div className="flex items-center space-x-1">
+                                <Globe className="w-3 h-3 text-secondary-400" />
+                                <a href={company.website} target="_blank" rel="noopener noreferrer" className="hover:text-primary-600 underline">
+                                  {new URL(company.website).hostname}
+                                </a>
+                              </div>
+                            )}
+                            {company.contactEmail && (
+                              <div className="flex items-center space-x-1">
+                                <Mail className="w-3 h-3 text-secondary-400" />
+                                <span>{company.contactEmail}</span>
+                              </div>
+                            )}
+                            {company.contactPhone && (
+                              <div className="flex items-center space-x-1">
+                                <Phone className="w-3 h-3 text-secondary-400" />
+                                <span>{company.contactPhone}</span>
+                              </div>
+                            )}
+                            {(company.city || company.state) && (
+                              <div className="flex items-center space-x-1">
+                                <MapPin className="w-3 h-3 text-secondary-400" />
+                                <span>{[company.city, company.state].filter(Boolean).join(', ')}</span>
+                              </div>
+                            )}
+                            {company.industry && (
+                              <Badge variant="outline" className="text-xs">{company.industry}</Badge>
+                            )}
+                          </>
+                        ) : (
+                          <>
+                            {company.domain && (
+                              <span>{company.domain}</span>
+                            )}
+                            {company.parentId && (
+                              <span>Parent: {getParentCompanyName(company.parentId)}</span>
+                            )}
+                            <span>Created: {new Date(company.createdAt || company.createdTime || Date.now()).toLocaleDateString()}</span>
+                          </>
                         )}
-                        {company.parentId && (
-                          <span>Parent: {getParentCompanyName(company.parentId)}</span>
-                        )}
-                        <span>Created: {new Date(company.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
                   </div>
