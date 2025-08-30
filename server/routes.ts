@@ -127,6 +127,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Airtable data route - must be before :id route
+  app.get("/api/companies/airtable", requireAuth, async (req, res) => {
+    try {
+      const airtableService = (await import('./services/airtable.service')).default;
+      const companies = await airtableService.getCompanies();
+      res.json(companies);
+    } catch (error) {
+      console.error('Airtable fetch error:', error);
+      res.status(500).json({ error: error instanceof Error ? error.message : "Failed to fetch Airtable data" });
+    }
+  });
+
   app.get("/api/companies/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
