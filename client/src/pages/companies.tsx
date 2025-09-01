@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Building, Users, MoreVertical, Edit, Trash2, RefreshCw, Database, Cloud, Globe, Mail, Phone, MapPin } from 'lucide-react';
+import { Plus, Search, Building, Users, MoreVertical, Edit, Trash2, RefreshCw, Database, Cloud, Globe, Mail, Phone, MapPin, TrendingUp, ChevronDown, ChevronUp } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi } from '../lib/api';
@@ -33,6 +33,8 @@ export default function Companies() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [dataSource, setDataSource] = useState<'local' | 'airtable'>('local');
   const [isRefreshing, setIsRefreshing] = useState(false);
+  const [showCompetitiveAnalysis, setShowCompetitiveAnalysis] = useState(false);
+  const [expandedAnalysis, setExpandedAnalysis] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -43,6 +45,11 @@ export default function Companies() {
   const { data: airtableCompanies = [], isLoading: isLoadingAirtable, refetch: refetchAirtable } = useQuery({
     queryKey: ['/api/companies/airtable'],
     enabled: dataSource === 'airtable'
+  });
+
+  const { data: competitiveAnalysis = [], isLoading: isLoadingCompetitive, refetch: refetchCompetitive } = useQuery({
+    queryKey: ['/api/companies/competitive-analysis'],
+    enabled: showCompetitiveAnalysis
   });
 
   const createCompanyForm = useForm<CreateCompanyForm>({
@@ -83,6 +90,9 @@ export default function Companies() {
     setIsRefreshing(true);
     try {
       await refetchAirtable();
+      if (showCompetitiveAnalysis) {
+        await refetchCompetitive();
+      }
       toast({
         title: 'Data refreshed',
         description: 'Airtable data has been refreshed successfully.',
@@ -96,6 +106,14 @@ export default function Companies() {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  const toggleAnalysisExpansion = (companyId: string) => {
+    setExpandedAnalysis(prev => 
+      prev.includes(companyId) 
+        ? prev.filter(id => id !== companyId)
+        : [...prev, companyId]
+    );
   };
 
   const displayCompanies = dataSource === 'airtable' ? airtableCompanies : companies;
@@ -182,15 +200,26 @@ export default function Companies() {
               Airtable
             </Button>
             {dataSource === 'airtable' && (
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleRefreshAirtable}
-                disabled={isRefreshing}
-                data-testid="button-refresh-airtable"
-              >
-                <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
-              </Button>
+              <>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleRefreshAirtable}
+                  disabled={isRefreshing}
+                  data-testid="button-refresh-airtable"
+                >
+                  <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+                </Button>
+                <Button
+                  variant={showCompetitiveAnalysis ? 'default' : 'outline'}
+                  size="sm"
+                  onClick={() => setShowCompetitiveAnalysis(!showCompetitiveAnalysis)}
+                  data-testid="button-competitive-analysis"
+                >
+                  <TrendingUp className="w-4 h-4 mr-2" />
+                  Competitive Analysis
+                </Button>
+              </>
             )}
           </div>
         </div>
@@ -386,6 +415,109 @@ export default function Companies() {
             <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing || isLoadingAirtable ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
+        </div>
+      )}
+
+      {/* Competitive Analysis Section */}
+      {showCompetitiveAnalysis && competitiveAnalysis.length > 0 && (
+        <div className="mb-6">
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold">Competitive Analysis</h3>
+                <Badge variant="outline">{competitiveAnalysis.length} Companies Analyzed</Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {isLoadingCompetitive ? (
+                <div className="flex items-center justify-center py-8">
+                  <RefreshCw className="w-6 h-6 animate-spin text-primary-600" />
+                  <span className="ml-2 text-secondary-600">Loading competitive data...</span>
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  {competitiveAnalysis.map((analysis: any) => (
+                    <div key={analysis.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div 
+                        className="flex items-center justify-between cursor-pointer"
+                        onClick={() => toggleAnalysisExpansion(analysis.id)}
+                        data-testid={`competitive-analysis-${analysis.id}`}
+                      >
+                        <div className="flex items-center space-x-3">
+                          <div className="w-10 h-10 bg-primary-100 rounded-lg flex items-center justify-center">
+                            <TrendingUp className="w-5 h-5 text-primary-600" />
+                          </div>
+                          <div>
+                            <h4 className="font-semibold text-secondary-900">{analysis.companyName || 'Unknown Company'}</h4>
+                            {analysis.competitorAnalysis && (
+                              <p className="text-sm text-secondary-600">
+                                {analysis.competitorAnalysis.competitors ? 
+                                  `${analysis.competitorAnalysis.competitors.length} competitors identified` : 
+                                  'Analysis available'}
+                              </p>
+                            )}
+                          </div>
+                        </div>
+                        {expandedAnalysis.includes(analysis.id) ? (
+                          <ChevronUp className="w-5 h-5 text-secondary-400" />
+                        ) : (
+                          <ChevronDown className="w-5 h-5 text-secondary-400" />
+                        )}
+                      </div>
+                      
+                      {expandedAnalysis.includes(analysis.id) && analysis.competitorAnalysis && (
+                        <div className="mt-4 space-y-3">
+                          {analysis.competitorAnalysis.competitors && analysis.competitorAnalysis.competitors.length > 0 ? (
+                            <>
+                              <div className="text-sm font-medium text-secondary-700 mb-2">Competitors:</div>
+                              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
+                                {analysis.competitorAnalysis.competitors.map((competitor: any, index: number) => (
+                                  <div key={index} className="bg-gray-50 rounded-lg p-3">
+                                    <div className="font-medium text-secondary-900">
+                                      {competitor.name || competitor.company_name || `Competitor ${index + 1}`}
+                                    </div>
+                                    {competitor.website && (
+                                      <a 
+                                        href={competitor.website} 
+                                        target="_blank" 
+                                        rel="noopener noreferrer"
+                                        className="text-xs text-primary-600 hover:underline flex items-center mt-1"
+                                      >
+                                        <Globe className="w-3 h-3 mr-1" />
+                                        {new URL(competitor.website).hostname}
+                                      </a>
+                                    )}
+                                    {competitor.description && (
+                                      <p className="text-xs text-secondary-600 mt-1">{competitor.description}</p>
+                                    )}
+                                    {competitor.industry && (
+                                      <Badge variant="outline" className="mt-2 text-xs">{competitor.industry}</Badge>
+                                    )}
+                                  </div>
+                                ))}
+                              </div>
+                            </>
+                          ) : (
+                            <div className="bg-gray-50 rounded-lg p-4">
+                              <pre className="text-xs text-secondary-700 whitespace-pre-wrap">
+                                {JSON.stringify(analysis.competitorAnalysis, null, 2)}
+                              </pre>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      
+                      {expandedAnalysis.includes(analysis.id) && analysis.error && (
+                        <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
+                          <p className="text-sm text-red-800">{analysis.error}</p>
+                        </div>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </div>
       )}
 

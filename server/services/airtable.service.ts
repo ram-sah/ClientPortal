@@ -96,6 +96,68 @@ class AirtableService {
     // Implementation depends on your specific sync requirements
     console.log('Syncing company to database:', airtableCompany.name);
   }
+
+  async getCompetitiveAnalysis(): Promise<any[]> {
+    try {
+      const records = await base('Competitive Analysis').select({
+        view: 'Grid view'
+      }).all();
+
+      const competitiveData = [];
+      
+      for (const record of records) {
+        const rawJsonResponse = record.get('Raw JSON Response') as string;
+        const companyName = record.get('Company Name') as string || '';
+        const recordId = record.id;
+        
+        if (rawJsonResponse) {
+          try {
+            // Parse the JSON data from the Raw JSON Response field
+            const parsedData = JSON.parse(rawJsonResponse);
+            
+            // Structure the data with company information
+            competitiveData.push({
+              id: recordId,
+              companyName: companyName,
+              competitorAnalysis: parsedData,
+              // Include any other fields from the record
+              createdTime: record.get('_createdTime') as string || new Date().toISOString(),
+              // Add any additional fields that might be in the table
+              ...Object.fromEntries(
+                Object.entries(record.fields).filter(([key]) => 
+                  !['Raw JSON Response', 'Company Name', '_createdTime'].includes(key)
+                )
+              )
+            });
+          } catch (parseError) {
+            console.error(`Error parsing JSON for company ${companyName}:`, parseError);
+            // Include record even if JSON parsing fails
+            competitiveData.push({
+              id: recordId,
+              companyName: companyName,
+              competitorAnalysis: null,
+              error: 'Failed to parse competitive analysis data',
+              rawData: rawJsonResponse,
+              createdTime: record.get('_createdTime') as string || new Date().toISOString()
+            });
+          }
+        } else {
+          // Include record with empty analysis
+          competitiveData.push({
+            id: recordId,
+            companyName: companyName,
+            competitorAnalysis: null,
+            createdTime: record.get('_createdTime') as string || new Date().toISOString()
+          });
+        }
+      }
+      
+      return competitiveData;
+    } catch (error) {
+      console.error('Error fetching competitive analysis from Airtable:', error);
+      throw new Error(`Failed to fetch competitive analysis from Airtable: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
 }
 
 export const airtableService = new AirtableService();

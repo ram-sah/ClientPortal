@@ -128,6 +128,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Airtable companies route - must be before /:id route
+  app.get("/api/companies/airtable", requireAuth, async (req, res) => {
+    try {
+      const tableName = (req.query.table as string) || 'Companies';
+      const companies = await airtableService.getCompanies(tableName);
+      res.json(companies);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get Airtable companies" });
+    }
+  });
+
+  // Airtable competitive analysis route
+  app.get("/api/companies/competitive-analysis", requireAuth, async (req, res) => {
+    try {
+      const competitiveData = await airtableService.getCompetitiveAnalysis();
+      res.json(competitiveData);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get competitive analysis data" });
+    }
+  });
+
   app.get("/api/companies/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
@@ -146,17 +167,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(company);
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get company" });
-    }
-  });
-
-  // Airtable companies route
-  app.get("/api/companies/airtable", requireAuth, async (req, res) => {
-    try {
-      const tableName = (req.query.table as string) || 'Companies';
-      const companies = await airtableService.getCompanies(tableName);
-      res.json(companies);
-    } catch (error) {
-      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get Airtable companies" });
     }
   });
 
