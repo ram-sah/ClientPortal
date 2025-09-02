@@ -10,12 +10,11 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Building, Users, MoreVertical, RefreshCw, Database, Cloud, Globe, Mail, Phone, MapPin, TrendingUp } from 'lucide-react';
+import { Plus, Search, Building, Users, RefreshCw, Database, Cloud, Globe, Mail, Phone, MapPin, TrendingUp } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi } from '../lib/api';
 import { useToast } from '../hooks/use-toast';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
 const createCompanySchema = z.object({
   name: z.string().min(1, 'Company name is required'),
@@ -48,10 +47,10 @@ export default function Companies() {
   });
 
 
-  // Fetch rendering reports from Airtable when in Airtable mode
+  // Fetch rendering reports from Airtable to show competitor data
   const { data: renderingReports = [], isLoading: isLoadingReports, refetch: refetchRenderingReports } = useQuery({
     queryKey: ['/api/rendering-reports/airtable'],
-    enabled: dataSource === 'airtable'
+    enabled: true // Always fetch rendering reports to show competitor data
   });
 
 
@@ -529,23 +528,10 @@ export default function Companies() {
                     </div>
                   </div>
                   
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" data-testid={`button-company-actions-${company.id}`}>
-                        <MoreVertical className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem data-testid={`button-view-users-${company.id}`}>
-                        <Users className="w-4 h-4 mr-2" />
-                        View Users
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
                 </div>
                 
                 {/* Auto-show Competitor Comparison for client companies with reports */}
-                {company.type === 'client' && dataSource === 'airtable' && (
+                {company.type === 'client' && renderingReports && renderingReports.length > 0 && (
                   <div className="mt-4 border-t pt-4">
                     {(() => {
                       // Find the report for this company by matching company name
