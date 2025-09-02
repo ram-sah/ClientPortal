@@ -531,17 +531,9 @@ export default function Companies() {
                 </div>
                 
                 {/* Auto-show Competitor Comparison for client companies with reports */}
-                {company.type === 'client' && renderingReports && renderingReports.length > 0 && (
+                {company.type === 'client' && (
                   <div className="mt-4 border-t pt-4">
                     {(() => {
-                      // Find the report for this company by matching company name
-                      const report = Array.isArray(renderingReports) 
-                        ? renderingReports.find((r: any) => 
-                            r.companyName?.toLowerCase() === company.name?.toLowerCase() ||
-                            r.companyName?.toLowerCase() === company.Name?.toLowerCase()
-                          )
-                        : null;
-                      
                       if (isLoadingReports) {
                         return (
                           <div className="flex items-center justify-center py-4">
@@ -550,15 +542,71 @@ export default function Companies() {
                           </div>
                         );
                       }
+
+                      if (!renderingReports || !Array.isArray(renderingReports) || renderingReports.length === 0) {
+                        return (
+                          <div className="text-center py-4 text-secondary-500">
+                            No competitor reports available from Airtable.
+                          </div>
+                        );
+                      }
+
+                      
+                      // Improved name matching - try multiple variations
+                      const companyNameLower = company.name?.toLowerCase().trim();
+                      const report = renderingReports.find((r: any) => {
+                        const reportNameLower = r.companyName?.toLowerCase().trim();
+                        
+                        // Exact match
+                        if (reportNameLower === companyNameLower) return true;
+                        
+                        // Contains match
+                        if (reportNameLower?.includes(companyNameLower) || companyNameLower?.includes(reportNameLower)) return true;
+                        
+                        // Try without common suffixes and prefixes
+                        const cleanCompany = companyNameLower?.replace(/\s+(llc|inc|corp|ltd|ai|lab|labs)$/g, '').replace(/^(the\s+)/g, '');
+                        const cleanReport = reportNameLower?.replace(/\s+(llc|inc|corp|ltd|ai|lab|labs)$/g, '').replace(/^(the\s+)/g, '');
+                        if (cleanReport === cleanCompany) return true;
+                        
+                        // Word-by-word matching (at least 2 words match)
+                        const companyWords = companyNameLower?.split(/\s+/) || [];
+                        const reportWords = reportNameLower?.split(/\s+/) || [];
+                        const matchingWords = companyWords.filter(word => reportWords.includes(word));
+                        if (matchingWords.length >= Math.min(2, companyWords.length)) return true;
+                        
+                        // Similar length strings with high character overlap
+                        if (companyNameLower && reportNameLower && 
+                            Math.abs(companyNameLower.length - reportNameLower.length) <= 3) {
+                          const commonChars = companyNameLower.split('').filter(char => reportNameLower.includes(char)).length;
+                          const similarity = commonChars / Math.max(companyNameLower.length, reportNameLower.length);
+                          if (similarity > 0.8) return true;
+                        }
+                        
+                        return false;
+                      });
+                      
                       
                       if (!report) {
-                        return null; // Don't show anything if no report available
+                        return (
+                          <div className="text-center py-4 text-secondary-500">
+                            No competitor report available for "{company.name}" in Airtable.
+                            <br />
+                            <small className="text-xs">Available companies: {renderingReports.map((r: any) => r.companyName).join(', ')}</small>
+                          </div>
+                        );
                       }
                       
                       // Parse competitor scores if it's a JSON string
-                      const competitorScores = typeof report.competitorScores === 'string' 
-                        ? JSON.parse(report.competitorScores) 
-                        : report.competitorScores || [];
+                      let competitorScores = [];
+                      try {
+                        competitorScores = typeof report.competitorScores === 'string' 
+                          ? JSON.parse(report.competitorScores) 
+                          : report.competitorScores || [];
+                      } catch (e) {
+                        // Error parsing competitor scores - using empty array
+                        competitorScores = [];
+                      }
+                      
                       
                       return (
                         <CompetitorComparison
