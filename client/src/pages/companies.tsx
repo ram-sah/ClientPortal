@@ -654,7 +654,7 @@ export default function Companies() {
             </Button>
           </div>
 
-          <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
+          <div className="space-y-2">
             {renderingReports.map((report: any) => {
               const isExpanded = expandedReports.includes(report.id);
               
@@ -668,52 +668,66 @@ export default function Companies() {
                 competitorScores = [];
               }
 
+              // Generate company initials for avatar
+              const getInitials = (name: string) => {
+                return name
+                  .split(' ')
+                  .map(word => word.charAt(0))
+                  .join('')
+                  .toUpperCase()
+                  .slice(0, 2);
+              };
+
               return (
-                <Card key={report.id} className="border border-border/60" data-testid={`report-card-${report.id}`}>
-                  <CardHeader className="pb-3">
-                    <div 
-                      className="flex items-center justify-between cursor-pointer hover:bg-secondary/20 rounded-lg p-2 -m-2 transition-colors"
-                      onClick={() => toggleReportExpansion(report.id)}
-                      data-testid={`report-toggle-${report.id}`}
-                    >
-                      <div className="flex items-center gap-3">
-                        {isExpanded ? (
-                          <ChevronDown className="h-5 w-5 text-secondary-600" />
-                        ) : (
-                          <ChevronRight className="h-5 w-5 text-secondary-600" />
-                        )}
-                        <Building className="h-5 w-5 text-primary" />
-                        <div>
-                          <h3 className="text-lg font-semibold" data-testid={`report-company-name-${report.id}`}>
+                <div key={report.id} className="bg-white border border-border/60 rounded-lg" data-testid={`report-card-${report.id}`}>
+                  <div 
+                    className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                    onClick={() => toggleReportExpansion(report.id)}
+                    data-testid={`report-toggle-${report.id}`}
+                  >
+                    <div className="flex items-center gap-4">
+                      {/* Company Avatar */}
+                      <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold text-sm border">
+                        {getInitials(report.companyName)}
+                      </div>
+                      
+                      {/* Company Info */}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-3 mb-1">
+                          <h3 className="text-lg font-semibold text-gray-900" data-testid={`report-company-name-${report.id}`}>
                             {report.companyName}
                           </h3>
-                          <div className="flex items-center gap-4 text-sm text-secondary-600 mt-1">
-                            {report.website && (
-                              <div className="flex items-center gap-1">
-                                <Globe className="h-3 w-3" />
-                                <span data-testid={`report-url-${report.id}`}>{report.website}</span>
-                              </div>
-                            )}
-                            {report.createdTime && (
-                              <div className="flex items-center gap-1">
-                                <Calendar className="h-3 w-3" />
-                                <span data-testid={`report-date-${report.id}`}>
-                                  {new Date(report.createdTime).toLocaleDateString()}
-                                </span>
-                              </div>
-                            )}
-                          </div>
+                          <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                            Client
+                          </Badge>
                         </div>
+                        
+                        {report.website && (
+                          <div className="text-sm text-gray-600" data-testid={`report-url-${report.id}`}>
+                            {report.website.replace(/^https?:\/\//, '')}
+                          </div>
+                        )}
                       </div>
-                      <div className="text-sm text-secondary-500">
-                        {isExpanded ? 'Click to collapse' : 'Click to expand'}
-                      </div>
+                      
+                      {/* Created Date */}
+                      {report.createdTime && (
+                        <div className="text-sm text-gray-600" data-testid={`report-date-${report.id}`}>
+                          Created: {new Date(report.createdTime).toLocaleDateString()}
+                        </div>
+                      )}
+                      
+                      {/* Expand/Collapse Icon */}
+                      {isExpanded ? (
+                        <ChevronDown className="h-5 w-5 text-gray-400" />
+                      ) : (
+                        <ChevronRight className="h-5 w-5 text-gray-400" />
+                      )}
                     </div>
-                  </CardHeader>
+                  </div>
                   
                   {isExpanded && (
-                    <CardContent className="pt-0">
-                      <div className="space-y-4">
+                    <div className="px-4 pb-4 border-t border-gray-100">
+                      <div className="pt-4 space-y-4">
                         <div className="flex flex-wrap gap-2 mb-4">
                           <Badge variant="secondary" data-testid={`report-traffic-${report.id}`}>
                             <TrendingUp className="h-3 w-3 mr-1" />
@@ -737,9 +751,9 @@ export default function Companies() {
                           competitorScores={competitorScores}
                         />
                       </div>
-                    </CardContent>
+                    </div>
                   )}
-                </Card>
+                </div>
               );
             })}
           </div>
