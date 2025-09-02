@@ -36,7 +36,6 @@ export default function Companies() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCompetitiveAnalysis, setShowCompetitiveAnalysis] = useState(false);
   const [expandedAnalysis, setExpandedAnalysis] = useState<string[]>([]);
-  const [selectedCompanyForReport, setSelectedCompanyForReport] = useState<string | null>(null);
   const [expandedReports, setExpandedReports] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -55,24 +54,12 @@ export default function Companies() {
     enabled: showCompetitiveAnalysis
   });
 
-  const { data: renderingReports = [], isLoading: isLoadingReports } = useQuery({
-    queryKey: ['/api/rendering-reports']
+  // Fetch rendering reports from Airtable when in Airtable mode
+  const { data: renderingReports = [], isLoading: isLoadingReports, refetch: refetchRenderingReports } = useQuery({
+    queryKey: ['/api/rendering-reports/airtable'],
+    enabled: dataSource === 'airtable'
   });
 
-  const { data: selectedCompanyReport, isLoading: isLoadingSelectedReport } = useQuery({
-    queryKey: ['/api/rendering-reports', { companyId: selectedCompanyForReport }],
-    queryFn: async () => {
-      if (!selectedCompanyForReport) return null;
-      const response = await fetch(`/api/rendering-reports?companyId=${selectedCompanyForReport}`, {
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        }
-      });
-      if (!response.ok) throw new Error('Failed to fetch report');
-      return response.json();
-    },
-    enabled: !!selectedCompanyForReport
-  });
 
   const createCompanyForm = useForm<CreateCompanyForm>({
     resolver: zodResolver(createCompanySchema),
@@ -111,10 +98,11 @@ export default function Companies() {
   const handleRefreshAirtable = async () => {
     setIsRefreshing(true);
     try {
-      await refetchAirtable();
-      if (showCompetitiveAnalysis) {
-        await refetchCompetitive();
-      }
+      await Promise.all([
+        refetchAirtable(),
+        refetchRenderingReports(),
+        showCompetitiveAnalysis ? refetchCompetitive() : Promise.resolve()
+      ]);
       toast({
         title: 'Data refreshed',
         description: 'Airtable data has been refreshed successfully.',
@@ -423,7 +411,13 @@ export default function Companies() {
             <span className="text-sm font-medium text-blue-900">Viewing data from Airtable</span>
             {airtableCompanies.length > 0 && (
               <Badge variant="secondary" className="ml-2">
-                {airtableCompanies.length} records
+                {airtableCompanies.length} companies
+              </Badge>
+            )}
+            {renderingReports.length > 0 && (
+              <Badge variant="outline" className="ml-2 bg-white">
+                <TrendingUp className="w-3 h-3 mr-1" />
+                {renderingReports.length} reports
               </Badge>
             )}
           </div>
@@ -431,10 +425,10 @@ export default function Companies() {
             variant="ghost"
             size="sm"
             onClick={handleRefreshAirtable}
-            disabled={isRefreshing || isLoadingAirtable}
+            disabled={isRefreshing || isLoadingAirtable || isLoadingReports}
             className="text-blue-600 hover:text-blue-700"
           >
-            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing || isLoadingAirtable ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`w-4 h-4 mr-2 ${isRefreshing || isLoadingAirtable || isLoadingReports ? 'animate-spin' : ''}`} />
             Refresh
           </Button>
         </div>
@@ -601,6 +595,15 @@ export default function Companies() {
                         <Badge className={getTypeColor(company.type)}>
                           {company.type.charAt(0).toUpperCase() + company.type.slice(1)}
                         </Badge>
+                        {dataSource === 'airtable' && renderingReports.some((r: any) => 
+                          r.companyName?.toLowerCase() === company.name?.toLowerCase() ||
+                          r.companyName?.toLowerCase() === company.Name?.toLowerCase()
+                        ) && (
+                          <Badge variant="outline" className="text-xs">
+                            <TrendingUp className="w-3 h-3 mr-1" />
+                            Report Available
+                          </Badge>
+                        )}
                       </div>
                       <div className="flex flex-wrap gap-3 text-sm text-secondary-600">
                         {dataSource === 'airtable' ? (
@@ -665,14 +668,13 @@ export default function Companies() {
                         <Users className="w-4 h-4 mr-2" />
                         View Users
                       </DropdownMenuItem>
-                      {company.type === 'client' && (
+                      {company.type === 'client' && dataSource === 'airtable' && (
                         <DropdownMenuItem 
                           onClick={() => {
                             if (expandedReports.includes(company.id)) {
                               setExpandedReports(prev => prev.filter(id => id !== company.id));
                             } else {
                               setExpandedReports(prev => [...prev, company.id]);
-                              setSelectedCompanyForReport(company.id);
                             }
                           }}
                           data-testid={`button-toggle-report-${company.id}`}
@@ -692,19 +694,22 @@ export default function Companies() {
                 </div>
                 
                 {/* Show Competitor Comparison if expanded */}
-                {expandedReports.includes(company.id) && (
+                {expandedReports.includes(company.id) && dataSource === 'airtable' && (
                   <div className="mt-4 border-t pt-4">
                     {(() => {
-                      // Find the report for this company
+                      // Find the report for this company by matching company name
                       const report = Array.isArray(renderingReports) 
-                        ? renderingReports.find((r: any) => r.companyId === company.id)
-                        : selectedCompanyReport;
+                        ? renderingReports.find((r: any) => 
+                            r.companyName?.toLowerCase() === company.name?.toLowerCase() ||
+                            r.companyName?.toLowerCase() === company.Name?.toLowerCase()
+                          )
+                        : null;
                       
-                      if (isLoadingReports || isLoadingSelectedReport) {
+                      if (isLoadingReports) {
                         return (
                           <div className="flex items-center justify-center py-4">
                             <RefreshCw className="w-5 h-5 animate-spin text-primary-600 mr-2" />
-                            <span className="text-secondary-600">Loading competitor data...</span>
+                            <span className="text-secondary-600">Loading competitor data from Airtable...</span>
                           </div>
                         );
                       }
@@ -712,7 +717,7 @@ export default function Companies() {
                       if (!report) {
                         return (
                           <div className="text-center py-4 text-secondary-500">
-                            No competitor report available for this company.
+                            No competitor report available for {company.name} in Airtable.
                           </div>
                         );
                       }

@@ -23,6 +23,17 @@ export interface AirtableCompany {
   [key: string]: any; // Allow for additional fields
 }
 
+export interface AirtableRenderingReport {
+  id: string;
+  companyName: string;
+  clientTraffic?: string;
+  clientKeywords?: string;
+  clientBacklinks?: string;
+  competitorScores?: any[];
+  createdTime: string;
+  [key: string]: any;
+}
+
 class AirtableService {
   async getCompanies(tableName: string = 'Companies'): Promise<AirtableCompany[]> {
     try {
@@ -95,6 +106,57 @@ class AirtableService {
     // This method can be used to sync Airtable data with your PostgreSQL database
     // Implementation depends on your specific sync requirements
     console.log('Syncing company to database:', airtableCompany.name);
+  }
+
+  async getRenderingReports(): Promise<AirtableRenderingReport[]> {
+    try {
+      const records = await base('Rendering Reports').select({
+        view: 'Grid view'
+      }).all();
+
+      return records.map(record => {
+        // Get competitor scores - it might be a JSON string or an object
+        let competitorScores = [];
+        const competitorScoresField = record.get('competitorScores');
+        
+        if (competitorScoresField) {
+          if (typeof competitorScoresField === 'string') {
+            try {
+              competitorScores = JSON.parse(competitorScoresField);
+            } catch (e) {
+              console.error('Error parsing competitorScores:', e);
+              competitorScores = [];
+            }
+          } else if (Array.isArray(competitorScoresField)) {
+            competitorScores = competitorScoresField;
+          } else if (typeof competitorScoresField === 'object') {
+            // If it's an object, try to extract competitor data
+            competitorScores = [competitorScoresField];
+          }
+        }
+
+        return {
+          id: record.id,
+          companyName: record.get('company_name') as string || record.get('Company Name') as string || '',
+          clientTraffic: record.get('client_traffic') as string || record.get('Client Traffic') as string || '',
+          clientKeywords: record.get('client_keywords') as string || record.get('Client Keywords') as string || '',
+          clientBacklinks: record.get('client_backlinks') as string || record.get('Client Backlinks') as string || '',
+          competitorScores: competitorScores,
+          createdTime: record.get('_createdTime') as string || new Date().toISOString(),
+          // Include all other fields dynamically
+          ...Object.fromEntries(
+            Object.entries(record.fields).filter(([key]) => 
+              !['company_name', 'Company Name', 'client_traffic', 'Client Traffic', 
+               'client_keywords', 'Client Keywords', 'client_backlinks', 'Client Backlinks',
+               'competitorScores', '_createdTime'].includes(key)
+            )
+          )
+        };
+      });
+    } catch (error) {
+      console.error('Error fetching rendering reports from Airtable:', error);
+      throw new Error(`Failed to fetch rendering reports from Airtable: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
   }
 
   async getCompetitiveAnalysis(): Promise<any[]> {

@@ -149,6 +149,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Airtable rendering reports route
+  app.get("/api/rendering-reports/airtable", requireAuth, async (req, res) => {
+    try {
+      const renderingReports = await airtableService.getRenderingReports();
+      res.json(renderingReports);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get rendering reports from Airtable" });
+    }
+  });
+
   app.get("/api/companies/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
