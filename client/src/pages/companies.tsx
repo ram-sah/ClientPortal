@@ -10,7 +10,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, Building, Users, RefreshCw, Database, Cloud, Globe, Mail, Phone, MapPin, TrendingUp } from 'lucide-react';
+import { Plus, Search, Building, Users, RefreshCw, Database, Cloud, Globe, Mail, Phone, MapPin, TrendingUp, ChevronDown, ChevronRight, Calendar } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi } from '../lib/api';
@@ -109,6 +109,14 @@ export default function Companies() {
     } finally {
       setIsRefreshing(false);
     }
+  };
+
+  const toggleReportExpansion = (reportId: string) => {
+    setExpandedReports(prev => 
+      prev.includes(reportId) 
+        ? prev.filter(id => id !== reportId)
+        : [...prev, reportId]
+    );
   };
 
 
@@ -646,8 +654,10 @@ export default function Companies() {
             </Button>
           </div>
 
-          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1">
+          <div className="grid gap-4 md:grid-cols-1 lg:grid-cols-1">
             {renderingReports.map((report: any) => {
+              const isExpanded = expandedReports.includes(report.id);
+              
               // Parse competitor scores if it's a JSON string
               let competitorScores = [];
               try {
@@ -660,14 +670,51 @@ export default function Companies() {
 
               return (
                 <Card key={report.id} className="border border-border/60" data-testid={`report-card-${report.id}`}>
-                  <CardHeader>
-                    <div className="flex items-start justify-between">
-                      <div className="space-y-1">
-                        <h3 className="text-lg font-semibold flex items-center gap-2" data-testid={`report-company-name-${report.id}`}>
-                          <Building className="h-5 w-5 text-primary" />
-                          {report.companyName}
-                        </h3>
-                        <div className="flex flex-wrap gap-2">
+                  <CardHeader className="pb-3">
+                    <div 
+                      className="flex items-center justify-between cursor-pointer hover:bg-secondary/20 rounded-lg p-2 -m-2 transition-colors"
+                      onClick={() => toggleReportExpansion(report.id)}
+                      data-testid={`report-toggle-${report.id}`}
+                    >
+                      <div className="flex items-center gap-3">
+                        {isExpanded ? (
+                          <ChevronDown className="h-5 w-5 text-secondary-600" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 text-secondary-600" />
+                        )}
+                        <Building className="h-5 w-5 text-primary" />
+                        <div>
+                          <h3 className="text-lg font-semibold" data-testid={`report-company-name-${report.id}`}>
+                            {report.companyName}
+                          </h3>
+                          <div className="flex items-center gap-4 text-sm text-secondary-600 mt-1">
+                            {report.website && (
+                              <div className="flex items-center gap-1">
+                                <Globe className="h-3 w-3" />
+                                <span data-testid={`report-url-${report.id}`}>{report.website}</span>
+                              </div>
+                            )}
+                            {report.createdTime && (
+                              <div className="flex items-center gap-1">
+                                <Calendar className="h-3 w-3" />
+                                <span data-testid={`report-date-${report.id}`}>
+                                  {new Date(report.createdTime).toLocaleDateString()}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-sm text-secondary-500">
+                        {isExpanded ? 'Click to collapse' : 'Click to expand'}
+                      </div>
+                    </div>
+                  </CardHeader>
+                  
+                  {isExpanded && (
+                    <CardContent className="pt-0">
+                      <div className="space-y-4">
+                        <div className="flex flex-wrap gap-2 mb-4">
                           <Badge variant="secondary" data-testid={`report-traffic-${report.id}`}>
                             <TrendingUp className="h-3 w-3 mr-1" />
                             Traffic: {report.clientTraffic || 'N/A'}
@@ -681,20 +728,17 @@ export default function Companies() {
                             Backlinks: {report.clientBacklinks || 'N/A'}
                           </Badge>
                         </div>
+                        
+                        <CompetitorComparison
+                          companyName={report.companyName}
+                          clientTraffic={report.clientTraffic}
+                          clientKeywords={report.clientKeywords}
+                          clientBacklinks={report.clientBacklinks}
+                          competitorScores={competitorScores}
+                        />
                       </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="space-y-4">
-                      <CompetitorComparison
-                        companyName={report.companyName}
-                        clientTraffic={report.clientTraffic}
-                        clientKeywords={report.clientKeywords}
-                        clientBacklinks={report.clientBacklinks}
-                        competitorScores={competitorScores}
-                      />
-                    </div>
-                  </CardContent>
+                    </CardContent>
+                  )}
                 </Card>
               );
             })}
