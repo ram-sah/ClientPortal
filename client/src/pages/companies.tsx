@@ -625,6 +625,82 @@ export default function Companies() {
           ))}
         </div>
       )}
+
+      {/* Dedicated section for Airtable Rendering Reports - Show all companies from Airtable */}
+      {renderingReports && renderingReports.length > 0 && (
+        <div className="space-y-6">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold">Competitor Analysis Reports</h2>
+              <p className="text-secondary-600">All companies with competitor data from Airtable</p>
+            </div>
+            <Button
+              onClick={() => refetchRenderingReports()}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              disabled={isLoadingReports}
+            >
+              <RefreshCw className={`h-4 w-4 ${isLoadingReports ? 'animate-spin' : ''}`} />
+              Refresh Reports
+            </Button>
+          </div>
+
+          <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-1">
+            {renderingReports.map((report: any) => {
+              // Parse competitor scores if it's a JSON string
+              let competitorScores = [];
+              try {
+                competitorScores = typeof report.competitorScores === 'string' 
+                  ? JSON.parse(report.competitorScores) 
+                  : report.competitorScores || [];
+              } catch (e) {
+                competitorScores = [];
+              }
+
+              return (
+                <Card key={report.id} className="border border-border/60" data-testid={`report-card-${report.id}`}>
+                  <CardHeader>
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <h3 className="text-lg font-semibold flex items-center gap-2" data-testid={`report-company-name-${report.id}`}>
+                          <Building className="h-5 w-5 text-primary" />
+                          {report.companyName}
+                        </h3>
+                        <div className="flex flex-wrap gap-2">
+                          <Badge variant="secondary" data-testid={`report-traffic-${report.id}`}>
+                            <TrendingUp className="h-3 w-3 mr-1" />
+                            Traffic: {report.clientTraffic || 'N/A'}
+                          </Badge>
+                          <Badge variant="secondary" data-testid={`report-keywords-${report.id}`}>
+                            <Globe className="h-3 w-3 mr-1" />
+                            Keywords: {report.clientKeywords || 'N/A'}
+                          </Badge>
+                          <Badge variant="secondary" data-testid={`report-backlinks-${report.id}`}>
+                            <Database className="h-3 w-3 mr-1" />
+                            Backlinks: {report.clientBacklinks || 'N/A'}
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <CompetitorComparison
+                        companyName={report.companyName}
+                        clientTraffic={report.clientTraffic}
+                        clientKeywords={report.clientKeywords}
+                        clientBacklinks={report.clientBacklinks}
+                        competitorScores={competitorScores}
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        </div>
+      )}
     </AppLayout>
   );
 }
