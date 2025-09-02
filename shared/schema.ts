@@ -145,6 +145,20 @@ export const consentLog = pgTable("consent_log", {
   createdAt: timestamp("created_at").defaultNow()
 });
 
+// Rendering Reports table
+export const renderingReports = pgTable("rendering_reports", {
+  id: uuid("id").primaryKey().default(sql`gen_random_uuid()`),
+  companyId: uuid("company_id").references(() => companies.id).notNull(),
+  companyName: varchar("company_name", { length: 255 }).notNull(),
+  clientTraffic: varchar("client_traffic", { length: 100 }),
+  clientKeywords: varchar("client_keywords", { length: 100 }),
+  clientBacklinks: varchar("client_backlinks", { length: 100 }),
+  competitorScores: jsonb("competitor_scores").default([]),
+  createdBy: uuid("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow()
+});
+
 // Insert schemas
 export const insertCompanySchema = createInsertSchema(companies).omit({
   id: true,
@@ -178,6 +192,12 @@ export const insertAccessRequestSchema = createInsertSchema(accessRequests).omit
   reviewedAt: true
 });
 
+export const insertRenderingReportSchema = createInsertSchema(renderingReports).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
 // Types
 export type Company = typeof companies.$inferSelect;
 export type InsertCompany = z.infer<typeof insertCompanySchema>;
@@ -203,3 +223,6 @@ export type InsertAccessRequest = z.infer<typeof insertAccessRequestSchema>;
 export type AuditLog = typeof auditLog.$inferSelect;
 
 export type ConsentLog = typeof consentLog.$inferSelect;
+
+export type RenderingReport = typeof renderingReports.$inferSelect;
+export type InsertRenderingReport = z.infer<typeof insertRenderingReportSchema>;

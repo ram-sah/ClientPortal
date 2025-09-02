@@ -12,7 +12,9 @@ import type {
   DigitalAudit,
   InsertDigitalAudit,
   AccessRequest,
-  InsertAccessRequest
+  InsertAccessRequest,
+  RenderingReport,
+  InsertRenderingReport
 } from "@shared/schema";
 
 // Database connection
@@ -65,6 +67,14 @@ export interface IStorage {
 
   // Audit logging
   logActivity(userId: string, action: string, resourceType?: string, resourceId?: string, details?: any): Promise<void>;
+
+  // Rendering Report methods
+  getRenderingReport(id: string): Promise<RenderingReport | undefined>;
+  getRenderingReportByCompany(companyId: string): Promise<RenderingReport | undefined>;
+  getRenderingReports(): Promise<RenderingReport[]>;
+  createRenderingReport(report: InsertRenderingReport): Promise<RenderingReport>;
+  updateRenderingReport(id: string, updates: Partial<InsertRenderingReport>): Promise<RenderingReport | undefined>;
+  deleteRenderingReport(id: string): Promise<boolean>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -301,6 +311,45 @@ export class DatabaseStorage implements IStorage {
       resourceId,
       details
     });
+  }
+
+  // Rendering Report methods
+  async getRenderingReport(id: string): Promise<RenderingReport | undefined> {
+    const result = await db.select().from(schema.renderingReports).where(eq(schema.renderingReports.id, id)).limit(1);
+    return result[0];
+  }
+
+  async getRenderingReportByCompany(companyId: string): Promise<RenderingReport | undefined> {
+    const result = await db.select().from(schema.renderingReports)
+      .where(eq(schema.renderingReports.companyId, companyId))
+      .orderBy(desc(schema.renderingReports.createdAt))
+      .limit(1);
+    return result[0];
+  }
+
+  async getRenderingReports(): Promise<RenderingReport[]> {
+    return await db.select().from(schema.renderingReports)
+      .orderBy(desc(schema.renderingReports.createdAt));
+  }
+
+  async createRenderingReport(report: InsertRenderingReport): Promise<RenderingReport> {
+    const result = await db.insert(schema.renderingReports).values(report).returning();
+    return result[0];
+  }
+
+  async updateRenderingReport(id: string, updates: Partial<InsertRenderingReport>): Promise<RenderingReport | undefined> {
+    const result = await db.update(schema.renderingReports)
+      .set({ ...updates, updatedAt: new Date() })
+      .where(eq(schema.renderingReports.id, id))
+      .returning();
+    return result[0];
+  }
+
+  async deleteRenderingReport(id: string): Promise<boolean> {
+    const result = await db.delete(schema.renderingReports)
+      .where(eq(schema.renderingReports.id, id))
+      .returning();
+    return result.length > 0;
   }
 }
 

@@ -9,7 +9,7 @@ import { projectService } from "./services/project.service";
 import { auditService } from "./services/audit.service";
 import { airtableService } from "./services/airtable.service";
 import { storage } from "./storage";
-import { insertUserSchema, insertCompanySchema, insertProjectSchema, insertDigitalAuditSchema, insertAccessRequestSchema } from "@shared/schema";
+import { insertUserSchema, insertCompanySchema, insertProjectSchema, insertDigitalAuditSchema, insertAccessRequestSchema, insertRenderingReportSchema } from "@shared/schema";
 
 // Login schema
 const loginSchema = z.object({
@@ -494,6 +494,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get dashboard stats" });
+    }
+  });
+
+  // Rendering Reports routes
+  app.get("/api/rendering-reports", requireAuth, async (req, res) => {
+    try {
+      const { companyId } = req.query;
+      
+      if (companyId && typeof companyId === 'string') {
+        const canAccess = await storage.canUserAccessCompany(req.user!.id, companyId);
+        if (!canAccess) {
+          return res.status(403).json({ error: "Access denied" });
+        }
+        
+        const report = await storage.getRenderingReportByCompany(companyId);
+        res.json(report || null);
+      } else {
+        // Return all reports for authorized users (owner/admin)
+        if (req.user!.role === 'owner' || req.user!.role === 'admin') {
+          const reports = await storage.getRenderingReports();
+          res.json(reports);
+        } else {
+          // Return only the user's company report
+          const report = await storage.getRenderingReportByCompany(req.user!.companyId);
+          res.json(report ? [report] : []);
+        }
+      }
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get rendering reports" });
+    }
+  });
+
+  app.get("/api/rendering-reports/:id", requireAuth, async (req, res) => {
+    try {
+      const { id } = req.params;
+      const report = await storage.getRenderingReport(id);
+      
+      if (!report) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+      
+      const canAccess = await storage.canUserAccessCompany(req.user!.id, report.companyId);
+      if (!canAccess) {
+        return res.status(403).json({ error: "Access denied" });
+      }
+      
+      res.json(report);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get rendering report" });
+    }
+  });
+
+  app.post("/api/rendering-reports", requireAuth, async (req, res) => {
+    try {
+      // Only owner or admin can create reports
+      if (req.user!.role !== 'owner' && req.user!.role !== 'admin') {
+        return res.status(403).json({ error: 'Insufficient permissions' });
+      }
+      
+      const reportData = insertRenderingReportSchema.parse(req.body);
+      reportData.createdBy = req.user!.id;
+      
+      const report = await storage.createRenderingReport(reportData);
+      
+      await storage.logActivity(req.user!.id, 'CREATE_RENDERING_REPORT', 'rendering_report', report.id);
+      
+      res.status(201).json(report);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to create rendering report" });
+    }
+  });
+
+  app.patch("/api/rendering-reports/:id", requireAuth, async (req, res) => {
+    try {
+      // Only owner or admin can update reports
+      if (req.user!.role !== 'owner' && req.user!.role !== 'admin') {
+        return res.status(403).json({ error: 'Insufficient permissions' });
+      }
+      
+      const { id } = req.params;
+      const updates = insertRenderingReportSchema.partial().parse(req.body);
+      
+      const report = await storage.updateRenderingReport(id, updates);
+      
+      if (!report) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+      
+      await storage.logActivity(req.user!.id, 'UPDATE_RENDERING_REPORT', 'rendering_report', id);
+      
+      res.json(report);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to update rendering report" });
+    }
+  });
+
+  app.delete("/api/rendering-reports/:id", requireAuth, async (req, res) => {
+    try {
+      // Only owner or admin can delete reports
+      if (req.user!.role !== 'owner' && req.user!.role !== 'admin') {
+        return res.status(403).json({ error: 'Insufficient permissions' });
+      }
+      
+      const { id } = req.params;
+      const deleted = await storage.deleteRenderingReport(id);
+      
+      if (!deleted) {
+        return res.status(404).json({ error: "Report not found" });
+      }
+      
+      await storage.logActivity(req.user!.id, 'DELETE_RENDERING_REPORT', 'rendering_report', id);
+      
+      res.json({ message: "Report deleted successfully" });
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to delete rendering report" });
     }
   });
 

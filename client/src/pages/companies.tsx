@@ -1,4 +1,5 @@
   import { AppLayout } from '../components/layout/app-layout';
+import { CompetitorComparison } from '../components/companies/competitor-comparison';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -35,6 +36,8 @@ export default function Companies() {
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [showCompetitiveAnalysis, setShowCompetitiveAnalysis] = useState(false);
   const [expandedAnalysis, setExpandedAnalysis] = useState<string[]>([]);
+  const [selectedCompanyForReport, setSelectedCompanyForReport] = useState<string | null>(null);
+  const [expandedReports, setExpandedReports] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
@@ -50,6 +53,25 @@ export default function Companies() {
   const { data: competitiveAnalysis = [], isLoading: isLoadingCompetitive, refetch: refetchCompetitive } = useQuery({
     queryKey: ['/api/companies/competitive-analysis'],
     enabled: showCompetitiveAnalysis
+  });
+
+  const { data: renderingReports = [], isLoading: isLoadingReports } = useQuery({
+    queryKey: ['/api/rendering-reports']
+  });
+
+  const { data: selectedCompanyReport, isLoading: isLoadingSelectedReport } = useQuery({
+    queryKey: ['/api/rendering-reports', { companyId: selectedCompanyForReport }],
+    queryFn: async () => {
+      if (!selectedCompanyForReport) return null;
+      const response = await fetch(`/api/rendering-reports?companyId=${selectedCompanyForReport}`, {
+        headers: {
+          'Authorization': `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+      if (!response.ok) throw new Error('Failed to fetch report');
+      return response.json();
+    },
+    enabled: !!selectedCompanyForReport
   });
 
   const createCompanyForm = useForm<CreateCompanyForm>({
@@ -643,6 +665,22 @@ export default function Companies() {
                         <Users className="w-4 h-4 mr-2" />
                         View Users
                       </DropdownMenuItem>
+                      {company.type === 'client' && (
+                        <DropdownMenuItem 
+                          onClick={() => {
+                            if (expandedReports.includes(company.id)) {
+                              setExpandedReports(prev => prev.filter(id => id !== company.id));
+                            } else {
+                              setExpandedReports(prev => [...prev, company.id]);
+                              setSelectedCompanyForReport(company.id);
+                            }
+                          }}
+                          data-testid={`button-toggle-report-${company.id}`}
+                        >
+                          <TrendingUp className="w-4 h-4 mr-2" />
+                          {expandedReports.includes(company.id) ? 'Hide' : 'Show'} Competitor Report
+                        </DropdownMenuItem>
+                      )}
                       {company.type !== 'owner' && (
                         <DropdownMenuItem className="text-red-600" data-testid={`button-delete-company-${company.id}`}>
                           <Trash2 className="w-4 h-4 mr-2" />
@@ -652,6 +690,50 @@ export default function Companies() {
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </div>
+                
+                {/* Show Competitor Comparison if expanded */}
+                {expandedReports.includes(company.id) && (
+                  <div className="mt-4 border-t pt-4">
+                    {(() => {
+                      // Find the report for this company
+                      const report = Array.isArray(renderingReports) 
+                        ? renderingReports.find((r: any) => r.companyId === company.id)
+                        : selectedCompanyReport;
+                      
+                      if (isLoadingReports || isLoadingSelectedReport) {
+                        return (
+                          <div className="flex items-center justify-center py-4">
+                            <RefreshCw className="w-5 h-5 animate-spin text-primary-600 mr-2" />
+                            <span className="text-secondary-600">Loading competitor data...</span>
+                          </div>
+                        );
+                      }
+                      
+                      if (!report) {
+                        return (
+                          <div className="text-center py-4 text-secondary-500">
+                            No competitor report available for this company.
+                          </div>
+                        );
+                      }
+                      
+                      // Parse competitor scores if it's a JSON string
+                      const competitorScores = typeof report.competitorScores === 'string' 
+                        ? JSON.parse(report.competitorScores) 
+                        : report.competitorScores || [];
+                      
+                      return (
+                        <CompetitorComparison
+                          companyName={report.companyName || company.name}
+                          clientTraffic={report.clientTraffic}
+                          clientKeywords={report.clientKeywords}
+                          clientBacklinks={report.clientBacklinks}
+                          competitorScores={competitorScores}
+                        />
+                      );
+                    })()}
+                  </div>
+                )}
               </CardContent>
             </Card>
           ))}
