@@ -92,6 +92,15 @@ export const userApi = {
   createUser: async (data: { email: string; password: string; firstName: string; lastName: string; companyId: string; role: string }): Promise<User> => {
     const response = await apiRequest('POST', '/api/users', data);
     return response.json();
+  },
+  
+  updateUser: async (id: string, data: { email: string; firstName: string; lastName: string; companyId: string; role: string; isActive?: boolean }): Promise<User> => {
+    const response = await apiRequest('PATCH', `/api/users/${id}`, data);
+    return response.json();
+  },
+  
+  deleteUser: async (id: string): Promise<void> => {
+    await apiRequest('DELETE', `/api/users/${id}`);
   }
 };
 

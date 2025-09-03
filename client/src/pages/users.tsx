@@ -9,7 +9,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from '
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Plus, Search, UserPlus, Mail, MoreVertical, Edit, Trash2 } from 'lucide-react';
+import { Plus, Search, UserPlus, Mail, MoreVertical, Edit, Trash2, UserX, Users as UsersIcon } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { companyApi, userApi } from '../lib/api';
@@ -34,6 +34,8 @@ export default function Users() {
   const [roleFilter, setRoleFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingUser, setEditingUser] = useState<any>(null);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -51,6 +53,20 @@ export default function Users() {
     defaultValues: {
       email: '',
       password: '',
+      firstName: '',
+      lastName: '',
+      companyId: '',
+      role: ''
+    }
+  });
+
+  const editUserSchema = createUserSchema.omit({ password: true });
+  type EditUserForm = z.infer<typeof editUserSchema>;
+
+  const editUserForm = useForm<EditUserForm>({
+    resolver: zodResolver(editUserSchema),
+    defaultValues: {
+      email: '',
       firstName: '',
       lastName: '',
       companyId: '',
@@ -78,8 +94,97 @@ export default function Users() {
     }
   });
 
+  const editUserMutation = useMutation({
+    mutationFn: ({ id, data }: { id: string; data: EditUserForm }) => userApi.updateUser(id, data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: 'User updated',
+        description: 'User has been updated successfully.',
+      });
+      setIsEditDialogOpen(false);
+      setEditingUser(null);
+      editUserForm.reset();
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update user',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const toggleUserActivationMutation = useMutation({
+    mutationFn: ({ id, isActive }: { id: string; isActive: boolean }) => 
+      userApi.updateUser(id, { isActive } as any),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: 'User status updated',
+        description: 'User activation status has been changed.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to update user status',
+        variant: 'destructive'
+      });
+    }
+  });
+
+  const deleteUserMutation = useMutation({
+    mutationFn: userApi.deleteUser,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
+      toast({
+        title: 'User deleted',
+        description: 'User has been deleted successfully.',
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'Failed to delete user',
+        variant: 'destructive'
+      });
+    }
+  });
+
   const onCreateSubmit = (data: CreateUserForm) => {
     createUserMutation.mutate(data);
+  };
+
+  const onEditSubmit = (data: EditUserForm) => {
+    if (editingUser) {
+      editUserMutation.mutate({ id: editingUser.id, data });
+    }
+  };
+
+  const handleEditUser = (user: any) => {
+    setEditingUser(user);
+    editUserForm.reset({
+      email: user.email,
+      firstName: user.firstName,
+      lastName: user.lastName,
+      companyId: user.companyId,
+      role: user.role
+    });
+    setIsEditDialogOpen(true);
+  };
+
+  const handleToggleActivation = (user: any) => {
+    toggleUserActivationMutation.mutate({ 
+      id: user.id, 
+      isActive: !user.isActive 
+    });
+  };
+
+  const handleDeleteUser = (user: any) => {
+    if (confirm(`Are you sure you want to delete ${user.firstName} ${user.lastName}? This action cannot be undone.`)) {
+      deleteUserMutation.mutate(user.id);
+    }
   };
 
   const filteredUsers = (users as any[]).filter((user: any) => {
@@ -291,6 +396,120 @@ export default function Users() {
             </Form>
           </DialogContent>
         </Dialog>
+
+        {/* Edit User Dialog */}
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Edit User</DialogTitle>
+            </DialogHeader>
+            <Form {...editUserForm}>
+              <form onSubmit={editUserForm.handleSubmit(onEditSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={editUserForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John" {...field} data-testid="input-edit-first-name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={editUserForm.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Doe" {...field} data-testid="input-edit-last-name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
+                <FormField
+                  control={editUserForm.control}
+                  name="email"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Email Address</FormLabel>
+                      <FormControl>
+                        <Input placeholder="user@example.com" {...field} data-testid="input-edit-email" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editUserForm.control}
+                  name="companyId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Company</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-edit-company">
+                            <SelectValue placeholder="Select a company" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {(companies as any[]).map((company) => (
+                            <SelectItem key={company.id} value={company.id}>
+                              {company.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={editUserForm.control}
+                  name="role"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Role</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value}>
+                        <FormControl>
+                          <SelectTrigger data-testid="select-edit-role">
+                            <SelectValue placeholder="Select a role" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {currentUser && getAvailableRoles(currentUser.role).filter(role => role.value !== 'owner').map((role) => (
+                            <SelectItem key={role.value} value={role.value}>
+                              {role.label}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <div className="flex justify-end space-x-2">
+                  <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                    Cancel
+                  </Button>
+                  <Button type="submit" disabled={editUserMutation.isPending} data-testid="button-edit-user-submit">
+                    {editUserMutation.isPending ? 'Updating...' : 'Update User'}
+                  </Button>
+                </div>
+              </form>
+            </Form>
+          </DialogContent>
+        </Dialog>
       </div>
 
       {/* Users List */}
@@ -388,13 +607,17 @@ export default function Users() {
                       </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
-                      <DropdownMenuItem data-testid={`button-edit-user-${user.id}`}>
+                      <DropdownMenuItem onClick={() => handleEditUser(user)} data-testid={`button-edit-user-${user.id}`}>
                         <Edit className="w-4 h-4 mr-2" />
                         Edit User
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-red-600" data-testid={`button-deactivate-user-${user.id}`}>
-                        <Trash2 className="w-4 h-4 mr-2" />
+                      <DropdownMenuItem onClick={() => handleToggleActivation(user)} data-testid={`button-toggle-user-${user.id}`}>
+                        <UserX className="w-4 h-4 mr-2" />
                         {user.isActive ? 'Deactivate' : 'Activate'}
+                      </DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => handleDeleteUser(user)} className="text-red-600" data-testid={`button-delete-user-${user.id}`}>
+                        <Trash2 className="w-4 h-4 mr-2" />
+                        Delete User
                       </DropdownMenuItem>
                     </DropdownMenuContent>
                   </DropdownMenu>
