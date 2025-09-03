@@ -108,13 +108,13 @@ class AirtableService {
     console.log('Syncing company to database:', airtableCompany.name);
   }
 
-  async getRenderingReports(): Promise<AirtableRenderingReport[]> {
+  async getRenderingReports(companyNameFilter?: string): Promise<AirtableRenderingReport[]> {
     try {
       const records = await base('Rendering Reports').select({
         view: 'Grid view'
       }).all();
 
-      return records.map(record => {
+      const reports = records.map(record => {
         // Get competitor scores - it might be a JSON string or an object
         let competitorScores = [];
         const competitorScoresField = record.get('competitorScores');
@@ -153,10 +153,46 @@ class AirtableService {
           )
         };
       });
+      
+      // Filter by company name if provided
+      if (companyNameFilter) {
+        return reports.filter(report => 
+          this.matchesCompanyName(report.companyName, companyNameFilter)
+        );
+      }
+      
+      return reports;
     } catch (error) {
       console.error('Error fetching rendering reports from Airtable:', error);
       throw new Error(`Failed to fetch rendering reports from Airtable: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+  
+  private matchesCompanyName(airtableCompanyName: string, filterCompanyName: string): boolean {
+    if (!airtableCompanyName || !filterCompanyName) {
+      return false;
+    }
+    
+    // Normalize both names for comparison
+    const normalize = (name: string) => 
+      name.toLowerCase()
+          .replace(/[^a-z0-9]/g, '') // Remove non-alphanumeric chars
+          .replace(/\s+/g, ''); // Remove spaces
+    
+    const normalizedAirtable = normalize(airtableCompanyName);
+    const normalizedFilter = normalize(filterCompanyName);
+    
+    // Direct match
+    if (normalizedAirtable === normalizedFilter) {
+      return true;
+    }
+    
+    // Check if one contains the other (for cases like "CMG" vs "CMG Digital")
+    if (normalizedAirtable.includes(normalizedFilter) || normalizedFilter.includes(normalizedAirtable)) {
+      return true;
+    }
+    
+    return false;
   }
 
   async getCompetitiveAnalysis(): Promise<any[]> {

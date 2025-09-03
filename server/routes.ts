@@ -152,7 +152,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Airtable rendering reports route
   app.get("/api/rendering-reports/airtable", requireAuth, async (req, res) => {
     try {
-      const renderingReports = await airtableService.getRenderingReports();
+      // For non-admin users, filter reports to show only their company's data
+      let companyNameFilter: string | undefined;
+      
+      if (req.user!.role !== 'owner' && req.user!.role !== 'admin') {
+        // Get the user's company details to filter reports
+        const userCompany = await companyService.getCompany(req.user!.companyId);
+        if (userCompany) {
+          companyNameFilter = userCompany.name;
+          console.log(`🏢 Filtering rendering reports for company: ${companyNameFilter}`);
+        }
+      } else {
+        console.log('👤 Admin/Owner user - showing all rendering reports');
+      }
+      
+      const renderingReports = await airtableService.getRenderingReports(companyNameFilter);
       res.json(renderingReports);
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get rendering reports from Airtable" });
