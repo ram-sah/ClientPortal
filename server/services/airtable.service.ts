@@ -137,16 +137,17 @@ class AirtableService {
 
         return {
           id: record.id,
-          companyName: record.get('company_name') as string || record.get('Company Name') as string || '',
+          companyName: record.get('Company') as string || record.get('company_name') as string || record.get('Company Name') as string || '',
           clientTraffic: record.get('client_traffic') as string || record.get('Client Traffic') as string || '',
           clientKeywords: record.get('client_keywords') as string || record.get('Client Keywords') as string || '',
           clientBacklinks: record.get('client_backlinks') as string || record.get('Client Backlinks') as string || '',
           competitorScores: competitorScores,
           createdTime: record.get('_createdTime') as string || new Date().toISOString(),
-          // Include all other fields dynamically
+          // Include all other fields dynamically  
+          fields: record.fields,
           ...Object.fromEntries(
             Object.entries(record.fields).filter(([key]) => 
-              !['company_name', 'Company Name', 'client_traffic', 'Client Traffic', 
+              !['Company', 'company_name', 'Company Name', 'client_traffic', 'Client Traffic', 
                'client_keywords', 'Client Keywords', 'client_backlinks', 'Client Backlinks',
                'competitorScores', '_createdTime'].includes(key)
             )
@@ -154,11 +155,17 @@ class AirtableService {
         };
       });
       
+      // Debug: Log all company names found in Airtable
+      console.log('📊 All company names in Airtable rendering reports:', reports.map(r => r.companyName));
+      
       // Filter by company name if provided
       if (companyNameFilter) {
-        return reports.filter(report => 
+        console.log(`🔍 Filtering for company: "${companyNameFilter}"`);
+        const filteredReports = reports.filter(report => 
           this.matchesCompanyName(report.companyName, companyNameFilter)
         );
+        console.log(`✅ Found ${filteredReports.length} matching reports`);
+        return filteredReports;
       }
       
       return reports;
@@ -176,22 +183,57 @@ class AirtableService {
     // Normalize both names for comparison
     const normalize = (name: string) => 
       name.toLowerCase()
-          .replace(/[^a-z0-9]/g, '') // Remove non-alphanumeric chars
-          .replace(/\s+/g, ''); // Remove spaces
+          .replace(/[^a-z0-9\s]/g, '') // Remove punctuation but keep spaces initially
+          .replace(/\s+/g, ' ') // Normalize multiple spaces to single space
+          .trim();
     
     const normalizedAirtable = normalize(airtableCompanyName);
     const normalizedFilter = normalize(filterCompanyName);
     
+    console.log(`🔍 Comparing: "${normalizedAirtable}" vs "${normalizedFilter}"`);
+    
     // Direct match
     if (normalizedAirtable === normalizedFilter) {
+      console.log('✅ Direct match found');
       return true;
     }
     
-    // Check if one contains the other (for cases like "CMG" vs "CMG Digital")
+    // Remove all spaces for more flexible matching
+    const compactAirtable = normalizedAirtable.replace(/\s+/g, '');
+    const compactFilter = normalizedFilter.replace(/\s+/g, '');
+    
+    if (compactAirtable === compactFilter) {
+      console.log('✅ Compact match found');
+      return true;
+    }
+    
+    // Check if one contains the other (for cases like "Units Lab" vs "Units Lab AI")
     if (normalizedAirtable.includes(normalizedFilter) || normalizedFilter.includes(normalizedAirtable)) {
+      console.log('✅ Partial match found');
       return true;
     }
     
+    // Check compact versions for partial matches
+    if (compactAirtable.includes(compactFilter) || compactFilter.includes(compactAirtable)) {
+      console.log('✅ Compact partial match found');
+      return true;
+    }
+    
+    // Check individual words for better matching
+    const airtableWords = normalizedAirtable.split(' ').filter(w => w.length > 2);
+    const filterWords = normalizedFilter.split(' ').filter(w => w.length > 2);
+    
+    // If most significant words match
+    const commonWords = airtableWords.filter(word => 
+      filterWords.some(filterWord => filterWord.includes(word) || word.includes(filterWord))
+    );
+    
+    if (commonWords.length >= Math.min(airtableWords.length, filterWords.length) / 2) {
+      console.log('✅ Word-based match found');
+      return true;
+    }
+    
+    console.log('❌ No match found');
     return false;
   }
 
