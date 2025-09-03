@@ -41,6 +41,16 @@ export class UserService {
     });
   }
 
+  async getAllUsers() {
+    const users = await storage.getAllUsers();
+    
+    // Remove password hashes from response
+    return users.map(user => {
+      const { passwordHash, ...userWithoutPassword } = user;
+      return userWithoutPassword;
+    });
+  }
+
   async inviteUser(email: string, companyId: string, role: string, invitedBy: string) {
     // Check if user already exists
     const existingUser = await storage.getUserByEmail(email);

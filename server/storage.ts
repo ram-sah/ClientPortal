@@ -34,6 +34,7 @@ export interface IStorage {
   updateUser(id: string, updates: Partial<InsertUser>): Promise<User | undefined>;
   deleteUser(id: string): Promise<boolean>;
   getUsersByCompany(companyId: string): Promise<User[]>;
+  getAllUsers(): Promise<User[]>;
 
   // Company methods
   getCompany(id: string): Promise<Company | undefined>;
@@ -108,6 +109,10 @@ export class DatabaseStorage implements IStorage {
 
   async getUsersByCompany(companyId: string): Promise<User[]> {
     return await db.select().from(schema.users).where(eq(schema.users.companyId, companyId));
+  }
+
+  async getAllUsers(): Promise<User[]> {
+    return await db.select().from(schema.users).orderBy(asc(schema.users.email));
   }
 
   async getCompany(id: string): Promise<Company | undefined> {

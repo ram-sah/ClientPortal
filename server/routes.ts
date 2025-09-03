@@ -208,16 +208,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const users = await userService.getUsersByCompany(companyId);
         res.json(users);
       } else {
-        // Return users from user's company, filtering based on permissions
-        const users = await userService.getUsersByCompany(req.user!.companyId);
+        // Different logic based on user role
+        let users = [];
         
-        // Filter users based on current user's role - Owner accounts should not appear in Admin/other views
-        let filteredUsers = users;
-        if (req.user!.role !== 'owner') {
-          filteredUsers = users.filter(user => user.role !== 'owner');
+        if (req.user!.role === 'owner' || req.user!.role === 'admin') {
+          // Owner/Admin can see all users they can manage
+          users = await userService.getAllUsers();
+          
+          // Filter users based on current user's role - Admins shouldn't see other owners
+          if (req.user!.role !== 'owner') {
+            users = users.filter(user => user.role !== 'owner');
+          }
+        } else {
+          // Client/Partner users only see users from their own company
+          users = await userService.getUsersByCompany(req.user!.companyId);
         }
         
-        res.json(filteredUsers);
+        res.json(users);
       }
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get users" });
