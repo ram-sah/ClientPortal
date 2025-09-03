@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { TrendingUp } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { TrendingUp } from "lucide-react";
 
 interface CompetitorScore {
   name: string;
@@ -20,11 +20,11 @@ interface CompetitorComparisonProps {
 
 export function CompetitorComparison({
   companyName,
-  clientTraffic = '-',
-  clientKeywords = '-',
-  clientBacklinks = '-',
+  clientTraffic = "-",
+  clientKeywords = "-",
+  clientBacklinks = "-",
   competitorScores = [],
-  className = ''
+  className = "",
 }: CompetitorComparisonProps) {
   return (
     <Card className={className}>
@@ -35,7 +35,9 @@ export function CompetitorComparison({
             Competitor Comparison
           </CardTitle>
           {competitorScores.length > 0 && (
-            <Badge variant="outline">{competitorScores.length} Competitors</Badge>
+            <Badge variant="outline">
+              {competitorScores.length} Competitors
+            </Badge>
           )}
         </div>
       </CardHeader>
@@ -49,8 +51,8 @@ export function CompetitorComparison({
                   {companyName}
                 </th>
                 {competitorScores.map((competitor, index) => (
-                  <th 
-                    key={index} 
+                  <th
+                    key={index}
                     className="text-center p-3 font-medium text-secondary-700"
                   >
                     {competitor.name}
@@ -65,29 +67,42 @@ export function CompetitorComparison({
                   {clientTraffic}
                 </td>
                 {competitorScores.map((competitor, index) => (
-                  <td key={index} className="text-center p-3 text-secondary-600">
+                  <td
+                    key={index}
+                    className="text-center p-3 text-secondary-600"
+                  >
                     {competitor.traffic}
                   </td>
                 ))}
               </tr>
               <tr className="border-b border-secondary-100 hover:bg-gray-50">
-                <td className="p-3 font-medium text-secondary-700">Keyword Rankings</td>
+                <td className="p-3 font-medium text-secondary-700">
+                  Keyword Rankings
+                </td>
                 <td className="text-center p-3 bg-primary-50 font-semibold text-primary-700">
                   {clientKeywords}
                 </td>
                 {competitorScores.map((competitor, index) => (
-                  <td key={index} className="text-center p-3 text-secondary-600">
+                  <td
+                    key={index}
+                    className="text-center p-3 text-secondary-600"
+                  >
                     {competitor.keywords}
                   </td>
                 ))}
               </tr>
               <tr className="hover:bg-gray-50">
-                <td className="p-3 font-medium text-secondary-700">Backlinks</td>
+                <td className="p-3 font-medium text-secondary-700">
+                  Backlinks
+                </td>
                 <td className="text-center p-3 bg-primary-50 font-semibold text-primary-700">
                   {clientBacklinks}
                 </td>
                 {competitorScores.map((competitor, index) => (
-                  <td key={index} className="text-center p-3 text-secondary-600">
+                  <td
+                    key={index}
+                    className="text-center p-3 text-secondary-600"
+                  >
                     {competitor.backlinks}
                   </td>
                 ))}
@@ -95,7 +110,7 @@ export function CompetitorComparison({
             </tbody>
           </table>
         </div>
-        
+
         {competitorScores.length === 0 && (
           <div className="text-center py-8 text-secondary-500">
             No competitor data available for this company.
