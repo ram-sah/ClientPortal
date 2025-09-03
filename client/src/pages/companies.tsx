@@ -170,7 +170,7 @@ export default function Companies() {
                   Total Companies
                 </p>
                 <p className="text-2xl font-semibold text-secondary-900">
-                  {companies.length + (renderingReports?.length || 0)}
+                  {renderingReports?.length || 0}
                 </p>
               </div>
               <div className="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center">
