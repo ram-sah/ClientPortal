@@ -167,7 +167,7 @@ export default function Companies() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm font-medium text-secondary-600">
-                  Total Companies
+                  Total Client Companies
                 </p>
                 <p className="text-2xl font-semibold text-secondary-900">
                   {renderingReports?.length || 0}
@@ -180,27 +180,6 @@ export default function Companies() {
           </CardContent>
         </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-secondary-600">
-                  Client Companies
-                </p>
-                <p className="text-2xl font-semibold text-secondary-900">
-                  {
-                    (displayCompanies as any[]).filter(
-                      (c: any) => c.type === "client",
-                    ).length
-                  }
-                </p>
-              </div>
-              <div className="w-12 h-12 bg-green-50 rounded-lg flex items-center justify-center">
-                <Users className="text-green-500 w-6 h-6" />
-              </div>
-            </div>
-          </CardContent>
-        </Card>
 
         <Card>
           <CardContent className="p-6">

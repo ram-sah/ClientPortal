@@ -18,19 +18,22 @@ import { useAuth } from '../hooks/use-auth';
 import { getRoleDisplayName, getAvailableRoles } from '../lib/utils';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 
-const inviteUserSchema = z.object({
+const createUserSchema = z.object({
   email: z.string().email('Please enter a valid email address'),
+  password: z.string().min(6, 'Password must be at least 6 characters'),
+  firstName: z.string().min(1, 'First name is required'),
+  lastName: z.string().min(1, 'Last name is required'),
   companyId: z.string().min(1, 'Please select a company'),
   role: z.string().min(1, 'Please select a role')
 });
 
-type InviteUserForm = z.infer<typeof inviteUserSchema>;
+type CreateUserForm = z.infer<typeof createUserSchema>;
 
 export default function Users() {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [companyFilter, setCompanyFilter] = useState('all');
-  const [isInviteDialogOpen, setIsInviteDialogOpen] = useState(false);
+  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { user: currentUser } = useAuth();
@@ -43,45 +46,48 @@ export default function Users() {
     queryKey: ['/api/users']
   });
 
-  const inviteUserForm = useForm<InviteUserForm>({
-    resolver: zodResolver(inviteUserSchema),
+  const createUserForm = useForm<CreateUserForm>({
+    resolver: zodResolver(createUserSchema),
     defaultValues: {
       email: '',
+      password: '',
+      firstName: '',
+      lastName: '',
       companyId: '',
       role: ''
     }
   });
 
-  const inviteUserMutation = useMutation({
-    mutationFn: async (data: InviteUserForm) => {
-      const response = await fetch('/api/users/invite', {
+  const createUserMutation = useMutation({
+    mutationFn: async (data: CreateUserForm) => {
+      const response = await fetch('/api/users', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
       });
-      if (!response.ok) throw new Error('Failed to invite user');
+      if (!response.ok) throw new Error('Failed to create user');
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/access-requests'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       toast({
-        title: 'User invited',
-        description: 'Invitation has been sent successfully.',
+        title: 'User created',
+        description: 'User has been created successfully.',
       });
-      setIsInviteDialogOpen(false);
-      inviteUserForm.reset();
+      setIsCreateDialogOpen(false);
+      createUserForm.reset();
     },
     onError: (error) => {
       toast({
         title: 'Error',
-        description: error instanceof Error ? error.message : 'Failed to invite user',
+        description: error instanceof Error ? error.message : 'Failed to create user',
         variant: 'destructive'
       });
     }
   });
 
-  const onInviteSubmit = (data: InviteUserForm) => {
-    inviteUserMutation.mutate(data);
+  const onCreateSubmit = (data: CreateUserForm) => {
+    createUserMutation.mutate(data);
   };
 
   const filteredUsers = (users as any[]).filter((user: any) => {
@@ -161,27 +167,56 @@ export default function Users() {
           </Select>
         </div>
         
-        <Dialog open={isInviteDialogOpen} onOpenChange={setIsInviteDialogOpen}>
+        <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
           <DialogTrigger asChild>
-            <Button data-testid="button-invite-user">
-              <UserPlus className="w-4 h-4 mr-2" />
-              Invite User
+            <Button data-testid="button-create-user">
+              <Plus className="w-4 h-4 mr-2" />
+              Create User
             </Button>
           </DialogTrigger>
           <DialogContent>
             <DialogHeader>
-              <DialogTitle>Invite New User</DialogTitle>
+              <DialogTitle>Create New User</DialogTitle>
             </DialogHeader>
-            <Form {...inviteUserForm}>
-              <form onSubmit={inviteUserForm.handleSubmit(onInviteSubmit)} className="space-y-4">
+            <Form {...createUserForm}>
+              <form onSubmit={createUserForm.handleSubmit(onCreateSubmit)} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <FormField
+                    control={createUserForm.control}
+                    name="firstName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>First Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="John" {...field} data-testid="input-first-name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  <FormField
+                    control={createUserForm.control}
+                    name="lastName"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Last Name</FormLabel>
+                        <FormControl>
+                          <Input placeholder="Doe" {...field} data-testid="input-last-name" />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+                
                 <FormField
-                  control={inviteUserForm.control}
+                  control={createUserForm.control}
                   name="email"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Email Address</FormLabel>
                       <FormControl>
-                        <Input placeholder="user@example.com" {...field} data-testid="input-invite-email" />
+                        <Input placeholder="user@example.com" {...field} data-testid="input-create-email" />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -189,14 +224,28 @@ export default function Users() {
                 />
                 
                 <FormField
-                  control={inviteUserForm.control}
+                  control={createUserForm.control}
+                  name="password"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Password</FormLabel>
+                      <FormControl>
+                        <Input type="password" placeholder="Enter password" {...field} data-testid="input-password" />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={createUserForm.control}
                   name="companyId"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Company</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger data-testid="select-invite-company">
+                          <SelectTrigger data-testid="select-create-company">
                             <SelectValue placeholder="Select a company" />
                           </SelectTrigger>
                         </FormControl>
@@ -214,19 +263,19 @@ export default function Users() {
                 />
                 
                 <FormField
-                  control={inviteUserForm.control}
+                  control={createUserForm.control}
                   name="role"
                   render={({ field }) => (
                     <FormItem>
                       <FormLabel>Role</FormLabel>
                       <Select onValueChange={field.onChange} value={field.value}>
                         <FormControl>
-                          <SelectTrigger data-testid="select-invite-role">
+                          <SelectTrigger data-testid="select-create-role">
                             <SelectValue placeholder="Select a role" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {currentUser && getAvailableRoles(currentUser.role).map((role) => (
+                          {currentUser && getAvailableRoles(currentUser.role).filter(role => role.value !== 'owner').map((role) => (
                             <SelectItem key={role.value} value={role.value}>
                               {role.label}
                             </SelectItem>
@@ -239,11 +288,11 @@ export default function Users() {
                 />
                 
                 <div className="flex justify-end space-x-2">
-                  <Button type="button" variant="outline" onClick={() => setIsInviteDialogOpen(false)}>
+                  <Button type="button" variant="outline" onClick={() => setIsCreateDialogOpen(false)}>
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={inviteUserMutation.isPending} data-testid="button-send-invite">
-                    {inviteUserMutation.isPending ? 'Sending...' : 'Send Invite'}
+                  <Button type="submit" disabled={createUserMutation.isPending} data-testid="button-create-user-submit">
+                    {createUserMutation.isPending ? 'Creating...' : 'Create User'}
                   </Button>
                 </div>
               </form>
@@ -284,9 +333,9 @@ export default function Users() {
               }
             </p>
             {!searchTerm && roleFilter === 'all' && companyFilter === 'all' && (
-              <Button data-testid="button-invite-first-user" onClick={() => setIsInviteDialogOpen(true)}>
-                <UserPlus className="w-4 h-4 mr-2" />
-                Invite Your First User
+              <Button data-testid="button-create-first-user" onClick={() => setIsCreateDialogOpen(true)}>
+                <Plus className="w-4 h-4 mr-2" />
+                Create Your First User
               </Button>
             )}
           </CardContent>
