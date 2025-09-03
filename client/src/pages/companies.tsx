@@ -1,6 +1,6 @@
 import { AppLayout } from "../components/layout/app-layout";
 import { CompetitorComparison } from "../components/companies/competitor-comparison";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -11,40 +11,20 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
-import {
-  Form,
-  FormControl,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormMessage,
-} from "@/components/ui/form";
+
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
 import {
-  Plus,
   Search,
   Building,
   Users,
   RefreshCw,
   Database,
-  Cloud,
   Globe,
-  Mail,
-  Phone,
-  MapPin,
   TrendingUp,
   ChevronDown,
   ChevronRight,
-  Calendar,
 } from "lucide-react";
 import { useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
@@ -65,22 +45,18 @@ type CreateCompanyForm = z.infer<typeof createCompanySchema>;
 export default function Companies() {
   const [searchTerm, setSearchTerm] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [setIsCreateDialogOpen] = useState(false);
   const [dataSource, setDataSource] = useState<"local" | "airtable">("local");
-  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [setIsRefreshing] = useState(false);
   const [expandedReports, setExpandedReports] = useState<string[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: companies = [], isLoading } = useQuery({
+  const { data: companies = [] } = useQuery({
     queryKey: ["/api/companies"],
   });
 
-  const {
-    data: airtableCompanies = [],
-    isLoading: isLoadingAirtable,
-    refetch: refetchAirtable,
-  } = useQuery({
+  const { data: airtableCompanies = [], refetch: refetchAirtable } = useQuery({
     queryKey: ["/api/companies/airtable"],
     enabled: dataSource === "airtable",
   });
@@ -126,33 +102,6 @@ export default function Companies() {
     },
   });
 
-  const onCreateSubmit = (data: CreateCompanyForm) => {
-    createCompanyMutation.mutate(data);
-  };
-
-  const handleRefreshAirtable = async () => {
-    setIsRefreshing(true);
-    try {
-      await Promise.all([
-        refetchAirtable(),
-        refetchRenderingReports(),
-        Promise.resolve(),
-      ]);
-      toast({
-        title: "Data refreshed",
-        description: "Airtable data has been refreshed successfully.",
-      });
-    } catch (error) {
-      toast({
-        title: "Error",
-        description: "Failed to refresh Airtable data",
-        variant: "destructive",
-      });
-    } finally {
-      setIsRefreshing(false);
-    }
-  };
-
   const toggleReportExpansion = (reportId: string) => {
     setExpandedReports((prev) =>
       prev.includes(reportId)
@@ -163,48 +112,6 @@ export default function Companies() {
 
   const displayCompanies =
     dataSource === "airtable" ? airtableCompanies : companies;
-  const filteredCompanies = (displayCompanies as any[]).filter(
-    (company: any) => {
-      const matchesSearch =
-        company.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.domain?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        company.website?.toLowerCase().includes(searchTerm.toLowerCase());
-      const matchesType = typeFilter === "all" || company.type === typeFilter;
-      return matchesSearch && matchesType;
-    },
-  );
-
-  const getTypeColor = (type: string) => {
-    switch (type) {
-      case "owner":
-        return "bg-purple-100 text-purple-800";
-      case "partner":
-        return "bg-orange-100 text-orange-800";
-      case "client":
-        return "bg-green-100 text-green-800";
-      case "sub":
-        return "bg-blue-100 text-blue-800";
-      default:
-        return "bg-gray-100 text-gray-800";
-    }
-  };
-
-  const getInitials = (name: string) => {
-    return name
-      .split(" ")
-      .map((word) => word[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2);
-  };
-
-  const getParentCompanyName = (parentId: string | null) => {
-    if (!parentId) return null;
-    const parent = (displayCompanies as any[]).find(
-      (c: any) => c.id === parentId,
-    );
-    return parent?.name;
-  };
 
   return (
     <AppLayout
@@ -249,11 +156,8 @@ export default function Companies() {
               <Database className="w-4 h-4 mr-2" />
               Local
             </Button>
-            
           </div>
         </div>
-
-
       </div>
 
       {/* Company Stats */}
@@ -266,7 +170,7 @@ export default function Companies() {
                   Total Companies
                 </p>
                 <p className="text-2xl font-semibold text-secondary-900">
-                  {companies.length + renderingReports.length}
+                  {companies.length + (renderingReports?.length || 0)}
                 </p>
               </div>
               <div className="w-12 h-12 bg-primary-50 rounded-lg flex items-center justify-center">
@@ -342,7 +246,6 @@ export default function Companies() {
           </CardContent>
         </Card>
       </div>
-
 
       {/* Dedicated section for Airtable Rendering Reports - Show all companies from Airtable */}
       {renderingReports && renderingReports.length > 0 && (
