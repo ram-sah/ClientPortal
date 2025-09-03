@@ -12,7 +12,7 @@ import { z } from 'zod';
 import { Plus, Search, UserPlus, Mail, MoreVertical, Edit, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { companyApi } from '../lib/api';
+import { companyApi, userApi } from '../lib/api';
 import { useToast } from '../hooks/use-toast';
 import { useAuth } from '../hooks/use-auth';
 import { getRoleDisplayName, getAvailableRoles } from '../lib/utils';
@@ -59,15 +59,7 @@ export default function Users() {
   });
 
   const createUserMutation = useMutation({
-    mutationFn: async (data: CreateUserForm) => {
-      const response = await fetch('/api/users', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      if (!response.ok) throw new Error('Failed to create user');
-      return response.json();
-    },
+    mutationFn: userApi.createUser,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/users'] });
       toast({

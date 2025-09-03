@@ -87,6 +87,14 @@ export const accessRequestApi = {
   }
 };
 
+// User API
+export const userApi = {
+  createUser: async (data: { email: string; password: string; firstName: string; lastName: string; companyId: string; role: string }): Promise<User> => {
+    const response = await apiRequest('POST', '/api/users', data);
+    return response.json();
+  }
+};
+
 // Dashboard API
 export const dashboardApi = {
   getStats: async (): Promise<DashboardStats> => {
