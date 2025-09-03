@@ -60,9 +60,7 @@ export function QuickActions() {
 
   return (
     <Card className="border border-secondary-200">
-      <CardHeader className="border-b border-secondary-200">
-        <h2 className="text-lg font-semibold text-secondary-900">Quick Actions</h2>
-      </CardHeader>
+     
       
       <CardContent className="p-6 space-y-4">
         {actions.map((action) => {

@@ -1,17 +1,18 @@
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { AppLayout } from '../components/layout/app-layout';
 import { StatsCards } from '../components/dashboard/stats-cards';
-import { RecentProjects } from '../components/dashboard/recent-projects';
-import { QuickActions } from '../components/dashboard/quick-actions';
 import { AccessRequests } from '../components/dashboard/access-requests';
-import { dashboardApi, airtableApi, companyApi } from '../lib/api';
+import { CompetitorComparison } from '../components/companies/competitor-comparison';
 import { useAuth } from '../hooks/use-auth';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Building2, TrendingUp, ExternalLink } from 'lucide-react';
+import { Button } from '@/components/ui/button';
+import { Building2, TrendingUp, ExternalLink, ChevronDown, ChevronRight, Globe, Database, RefreshCw } from 'lucide-react';
 
 export default function Dashboard() {
   const { user } = useAuth();
+  const [expandedReports, setExpandedReports] = useState<string[]>([]);
   
   const { data: stats, isLoading } = useQuery({
     queryKey: ['/api/dashboard/stats']
@@ -21,7 +22,7 @@ export default function Dashboard() {
     queryKey: ['/api/companies']
   });
 
-  const { data: renderingReports = [] } = useQuery({
+  const { data: renderingReports = [], refetch: refetchRenderingReports, isLoading: isLoadingReports } = useQuery({
     queryKey: ['/api/rendering-reports/airtable']
   });
 
@@ -32,7 +33,7 @@ export default function Dashboard() {
   const userCompanyReports = (renderingReports as any[]).filter((report: any) => {
     if (!userCompany) return false;
     
-    const reportCompanyName = report.fields['Company']?.toLowerCase() || '';
+    const reportCompanyName = report.companyName?.toLowerCase() || '';
     const userCompanyName = userCompany.name.toLowerCase();
     
     // Simple name matching
@@ -40,6 +41,24 @@ export default function Dashboard() {
            userCompanyName.includes(reportCompanyName) ||
            reportCompanyName === userCompanyName;
   });
+
+  const toggleReportExpansion = (reportId: string) => {
+    setExpandedReports((prev) =>
+      prev.includes(reportId)
+        ? prev.filter((id) => id !== reportId)
+        : [...prev, reportId],
+    );
+  };
+
+  // Generate company initials for avatar
+  const getInitials = (name: string) => {
+    return name
+      .split(" ")
+      .map((word) => word.charAt(0))
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   if (isLoading) {
     return (
@@ -76,92 +95,163 @@ export default function Dashboard() {
     >
       {stats && <StatsCards stats={stats} />}
       
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-        <RecentProjects />
-        <QuickActions />
-      </div>
-
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {/* Company Competitive Analysis */}
-        <Card className="border border-secondary-200">
-          <CardHeader className="pb-4">
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-lg font-semibold text-secondary-900 flex items-center">
-                <Building2 className="w-5 h-5 mr-2 text-primary-600" />
-                {userCompany ? `${userCompany.name} Analysis` : 'Company Analysis'}
-              </CardTitle>
-              <Badge variant={userCompanyReports.length > 0 ? "default" : "secondary"}>
-                {userCompanyReports.length} Reports
-              </Badge>
+      {/* Detailed Company Report Section */}
+      {userCompany && (
+        <div className="space-y-6 mb-8">
+          <div className="flex items-center justify-between">
+            <div>
+              <h2 className="text-2xl font-semibold">
+                {userCompany.name} - Company Report
+              </h2>
+              <p className="text-secondary-600">
+                Detailed competitive analysis and performance metrics
+              </p>
             </div>
-          </CardHeader>
-          
-          <CardContent>
-            {userCompany ? (
-              userCompanyReports.length > 0 ? (
-                <div className="space-y-4">
-                  {userCompanyReports.slice(0, 3).map((report: any) => (
-                    <div key={report.id} className="border border-secondary-100 rounded-lg p-4">
-                      <div className="flex items-start justify-between mb-2">
-                        <div className="flex-1">
-                          <h4 className="font-medium text-secondary-900">
-                            {report.fields['Company'] || 'Company Report'}
-                          </h4>
-                          <p className="text-sm text-secondary-600 mt-1">
-                            {report.fields['Description'] || 'Competitive analysis report'}
-                          </p>
+            <Button
+              onClick={() => refetchRenderingReports()}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              disabled={isLoadingReports}
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isLoadingReports ? "animate-spin" : ""}`}
+              />
+              Refresh Reports
+            </Button>
+          </div>
+
+          {userCompanyReports.length > 0 ? (
+            <div className="space-y-2">
+              {userCompanyReports.map((report: any) => {
+                const isExpanded = expandedReports.includes(report.id);
+
+                // Parse competitor scores if it's a JSON string
+                let competitorScores = [];
+                try {
+                  competitorScores =
+                    typeof report.competitorScores === "string"
+                      ? JSON.parse(report.competitorScores)
+                      : report.competitorScores || [];
+                } catch (e) {
+                  competitorScores = [];
+                }
+
+                return (
+                  <div
+                    key={report.id}
+                    className="bg-white border border-border/60 rounded-lg"
+                    data-testid={`report-card-${report.id}`}
+                  >
+                    <div
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-50 transition-colors"
+                      onClick={() => toggleReportExpansion(report.id)}
+                      data-testid={`report-toggle-${report.id}`}
+                    >
+                      <div className="flex items-center gap-4">
+                        {/* Company Avatar */}
+                        <div className="w-12 h-12 bg-gray-100 rounded-full flex items-center justify-center text-gray-600 font-semibold text-sm border">
+                          {getInitials(report.companyName)}
                         </div>
-                        {report.fields['URL'] && (
-                          <a 
-                            href={report.fields['URL']} 
-                            target="_blank" 
-                            rel="noopener noreferrer"
-                            className="text-primary-600 hover:text-primary-700 ml-2"
+
+                        {/* Company Info */}
+                        <div className="flex-1">
+                          <div className="flex items-center gap-3 mb-1">
+                            <h3
+                              className="text-lg font-semibold text-gray-900"
+                              data-testid={`report-company-name-${report.id}`}
+                            >
+                              {report.companyName}
+                            </h3>
+                            <Badge className="bg-green-100 text-green-800 hover:bg-green-100">
+                              Client
+                            </Badge>
+                          </div>
+
+                          {report.website && (
+                            <div
+                              className="text-sm text-gray-600"
+                              data-testid={`report-url-${report.id}`}
+                            >
+                              {report.website.replace(/^https?:\/\//, "")}
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Created Date */}
+                        {report.createdTime && (
+                          <div
+                            className="text-sm text-gray-600"
+                            data-testid={`report-date-${report.id}`}
                           >
-                            <ExternalLink className="w-4 h-4" />
-                          </a>
+                            Created:{" "}
+                            {new Date(report.createdTime).toLocaleDateString()}
+                          </div>
+                        )}
+
+                        {/* Expand/Collapse Icon */}
+                        {isExpanded ? (
+                          <ChevronDown className="h-5 w-5 text-gray-400" />
+                        ) : (
+                          <ChevronRight className="h-5 w-5 text-gray-400" />
                         )}
                       </div>
-                      
-                      <div className="flex items-center justify-between text-sm">
-                        <span className="text-secondary-500">
-                          {report.fields['Date'] ? new Date(report.fields['Date']).toLocaleDateString() : 'No date'}
-                        </span>
-                        <div className="flex items-center text-green-600">
-                          <TrendingUp className="w-3 h-3 mr-1" />
-                          <span>Active</span>
+                    </div>
+
+                    {isExpanded && (
+                      <div className="px-4 pb-4 border-t border-gray-100">
+                        <div className="pt-4 space-y-4">
+                          <div className="flex flex-wrap gap-2 mb-4">
+                            <Badge
+                              variant="secondary"
+                              data-testid={`report-traffic-${report.id}`}
+                            >
+                              <TrendingUp className="h-3 w-3 mr-1" />
+                              Traffic: {report.clientTraffic || "N/A"}
+                            </Badge>
+                            <Badge
+                              variant="secondary"
+                              data-testid={`report-keywords-${report.id}`}
+                            >
+                              <Globe className="h-3 w-3 mr-1" />
+                              Keywords: {report.clientKeywords || "N/A"}
+                            </Badge>
+                            <Badge
+                              variant="secondary"
+                              data-testid={`report-backlinks-${report.id}`}
+                            >
+                              <Database className="h-3 w-3 mr-1" />
+                              Backlinks: {report.clientBacklinks || "N/A"}
+                            </Badge>
+                          </div>
+
+                          <CompetitorComparison
+                            companyName={report.companyName}
+                            clientTraffic={report.clientTraffic}
+                            clientKeywords={report.clientKeywords}
+                            clientBacklinks={report.clientBacklinks}
+                            competitorScores={competitorScores}
+                          />
                         </div>
                       </div>
-                    </div>
-                  ))}
-                  
-                  {userCompanyReports.length > 3 && (
-                    <div className="text-center pt-2">
-                      <button className="text-primary-600 hover:text-primary-700 text-sm font-medium">
-                        View All {userCompanyReports.length} Reports
-                      </button>
-                    </div>
-                  )}
-                </div>
-              ) : (
-                <div className="text-center py-8">
-                  <div className="text-4xl text-secondary-400 mb-2">🏢</div>
-                  <p className="text-secondary-600 mb-2">No competitive data found</p>
-                  <p className="text-sm text-secondary-500">
-                    Reports for {userCompany.name} will appear here when available
-                  </p>
-                </div>
-              )
-            ) : (
-              <div className="text-center py-8">
-                <div className="text-4xl text-secondary-400 mb-2">🏢</div>
-                <p className="text-secondary-600">No company assigned</p>
-                <p className="text-sm text-secondary-500">Contact an administrator to assign your company</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12 bg-gray-50 rounded-lg">
+              <div className="text-4xl text-gray-400 mb-4">📊</div>
+              <p className="text-gray-600 mb-2">No competitive analysis reports found</p>
+              <p className="text-sm text-gray-500">
+                Reports for {userCompany.name} will appear here when available
+              </p>
+            </div>
+          )}
+        </div>
+      )}
 
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <AccessRequests />
       </div>
     </AppLayout>
