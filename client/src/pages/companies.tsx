@@ -235,7 +235,7 @@ export default function Companies() {
                 Competitor Analysis Reports
               </h2>
               <p className="text-secondary-600">
-                All companies with competitor
+                All companies with competitors
               </p>
             </div>
             <Button
