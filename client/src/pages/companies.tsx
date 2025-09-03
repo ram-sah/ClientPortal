@@ -145,18 +145,6 @@ export default function Companies() {
             </SelectContent>
           </Select>
 
-          {/* Data Source Toggle */}
-          <div className="flex gap-2">
-            <Button
-              variant={dataSource === "local" ? "default" : "outline"}
-              size="sm"
-              onClick={() => setDataSource("local")}
-              data-testid="button-local-data"
-            >
-              <Database className="w-4 h-4 mr-2" />
-              Local
-            </Button>
-          </div>
         </div>
       </div>
 
