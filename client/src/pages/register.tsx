@@ -117,10 +117,8 @@ export default function Register() {
                   <SelectValue placeholder="Select a role" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="client_editor">Client Editor</SelectItem>
-                  <SelectItem value="client_viewer">Client Viewer</SelectItem>
-                  <SelectItem value="partner_contributor">Partner Contributor</SelectItem>
-                  <SelectItem value="partner_viewer">Partner Viewer</SelectItem>
+                  <SelectItem value="client">Client</SelectItem>
+                  <SelectItem value="partner">Partner</SelectItem>
                 </SelectContent>
               </Select>
             </div>
