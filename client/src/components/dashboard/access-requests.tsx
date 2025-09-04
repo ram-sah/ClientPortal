@@ -5,20 +5,26 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { accessRequestApi } from '../../lib/api';
 import { useAuth } from '../../hooks/use-auth';
 import { useToast } from '../../hooks/use-toast';
+import type { AccessRequest } from '../../types/project';
 
 export function AccessRequests() {
   const { user } = useAuth();
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: accessRequests = [], isLoading } = useQuery({
+  const { data: accessRequests = [], isLoading } = useQuery<AccessRequest[]>({
     queryKey: ['/api/access-requests'],
     enabled: user?.role === 'owner' || user?.role === 'admin'
   });
 
+  const { data: companies = [] } = useQuery({
+    queryKey: ['/api/companies'],
+    enabled: user?.role === 'owner' || user?.role === 'admin'
+  });
+
   const updateRequestMutation = useMutation({
-    mutationFn: ({ id, status }: { id: string; status: string }) =>
-      accessRequestApi.updateAccessRequest(id, { status }),
+    mutationFn: ({ id, status, companyId }: { id: string; status: string; companyId?: string }) =>
+      accessRequestApi.updateAccessRequest(id, { status, companyId }),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/access-requests'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
@@ -38,7 +44,15 @@ export function AccessRequests() {
   });
 
   const handleApprove = (id: string) => {
-    updateRequestMutation.mutate({ id, status: 'approved' });
+    // Get the first client company as default, or let admin choose
+    const clientCompanies = (companies as any[]).filter((company: any) => company.type === 'client');
+    const defaultCompanyId = clientCompanies.length > 0 ? clientCompanies[0].id : undefined;
+    
+    updateRequestMutation.mutate({ 
+      id, 
+      status: 'approved',
+      companyId: defaultCompanyId
+    });
   };
 
   const handleDeny = (id: string) => {
@@ -78,7 +92,7 @@ export function AccessRequests() {
     );
   }
 
-  const pendingRequests = accessRequests.filter(req => req.status === 'pending');
+  const pendingRequests = accessRequests.filter((req: AccessRequest) => req.status === 'pending');
 
   return (
     <Card className="border border-secondary-200">
@@ -100,7 +114,7 @@ export function AccessRequests() {
           </div>
         ) : (
           <div className="divide-y divide-secondary-200">
-            {pendingRequests.map((request) => (
+            {pendingRequests.map((request: AccessRequest) => (
               <div key={request.id} className="p-6" data-testid={`access-request-${request.id}`}>
                 <div className="flex items-start justify-between">
                   <div>

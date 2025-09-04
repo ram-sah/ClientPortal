@@ -37,13 +37,13 @@ function Router() {
       </Route>
       
       <Route path="/reports">
-        <ProtectedRoute requiredRoles={['owner', 'admin', 'client_services', 'specialty_skills', 'client_editor', 'client_viewer']}>
+        <ProtectedRoute requiredRoles={['owner', 'admin', 'client', 'partner']}>
           <Reports />
         </ProtectedRoute>
       </Route>
       
       <Route path="/audits">
-        <ProtectedRoute requiredRoles={['owner', 'admin', 'client_services', 'specialty_skills', 'client_editor', 'client_viewer']}>
+        <ProtectedRoute requiredRoles={['owner', 'admin', 'client', 'partner']}>
           <Audits />
         </ProtectedRoute>
       </Route>
