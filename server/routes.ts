@@ -466,10 +466,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (status === 'approved') {
         // Create the user
+        const nameParts = request.requesterName.trim().split(' ');
+        const firstName = nameParts[0] || 'User';
+        const lastName = nameParts.length > 1 ? nameParts.slice(1).join(' ') : 'Account';
+        
         await userService.createUser({
           email: request.requesterEmail,
-          firstName: request.requesterName.split(' ')[0] || request.requesterName,
-          lastName: request.requesterName.split(' ')[1] || '',
+          firstName,
+          lastName,
           role: request.requestedRole,
           companyId: companyId || request.companyId!
         });

@@ -212,7 +212,8 @@ export default function Users() {
   };
 
   const getInitials = (firstName: string, lastName: string) => {
-    return `${firstName[0]}${lastName[0]}`.toUpperCase();
+    if (!firstName || !lastName) return '??';
+    return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
   };
 
   const getCompanyName = (companyId: string) => {
