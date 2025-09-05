@@ -212,8 +212,15 @@ export default function Users() {
   };
 
   const getInitials = (firstName: string, lastName: string) => {
-    if (!firstName || !lastName) return '??';
-    return `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase();
+    // Handle potential undefined/null values and different property names
+    const first = (firstName || '').trim();
+    const last = (lastName || '').trim();
+    
+    if (!first && !last) return '??';
+    if (!first) return last[0]?.toUpperCase() || '?';
+    if (!last) return first[0]?.toUpperCase() || '?';
+    
+    return `${first[0]}${last[0]}`.toUpperCase();
   };
 
   const getCompanyName = (companyId: string) => {
@@ -561,14 +568,14 @@ export default function Users() {
                   <div className="flex items-center space-x-4 flex-1">
                     <div className="w-12 h-12 bg-primary-100 rounded-full flex items-center justify-center">
                       <span className="text-primary-600 font-medium">
-                        {getInitials(user.firstName, user.lastName)}
+                        {getInitials(user.firstName || user.first_name, user.lastName || user.last_name)}
                       </span>
                     </div>
                     
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-3 mb-1">
                         <h3 className="font-semibold text-secondary-900">
-                          {user.firstName} {user.lastName}
+                          {user.firstName || user.first_name || 'User'} {user.lastName || user.last_name || 'Account'}
                         </h3>
                         <Badge className={getRoleColor(user.role)}>
                           {getRoleDisplayName(user.role)}
