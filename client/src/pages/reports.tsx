@@ -50,7 +50,14 @@ export default function Reports() {
   // Client Dashboard
   if (isClientUser) {
     return (
-      <AppLayout title="Reporting" subtitle={`Last updated: ${currentTime}`}>
+      <AppLayout title="Reporting" subtitle={`Last updated: ${currentTime}`}
+        actions={
+          <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+            <Download className="h-4 w-4 mr-2" />
+            Export Report
+          </Button>
+        }
+        >
         <Tabs
           value={selectedPeriod}
           onValueChange={(value: any) => setSelectedPeriod(value)}
