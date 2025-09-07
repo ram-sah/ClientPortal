@@ -45,7 +45,7 @@ export default function Reports() {
 
   // Check if user is a client
   const isClientUser =
-    user?.role === "client_editor" || user?.role === "client_viewer";
+    user?.role === "client" || user?.role === "client_editor" || user?.role === "client_viewer";
 
   // Client Dashboard
   if (isClientUser) {
