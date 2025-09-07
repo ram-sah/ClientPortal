@@ -60,14 +60,14 @@ export function QuickActions() {
 
   return (
     <Card className="border border-secondary-200">
-     
-      
+
+
       <CardContent className="p-6 space-y-4">
         {actions.map((action) => {
           if (!user || !action.roles.includes(user.role)) return null;
-          
+
           const Icon = action.icon;
-          
+
           return (
             <Button
               key={action.action}

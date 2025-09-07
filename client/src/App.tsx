@@ -22,51 +22,51 @@ function Router() {
       {/* Public routes */}
       <Route path="/login" component={Login} />
       <Route path="/register" component={Register} />
-      
+
       {/* Protected routes */}
       <Route path="/">
         <ProtectedRoute>
           <Dashboard />
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/projects">
         <ProtectedRoute>
           <Projects />
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/reports">
-        <ProtectedRoute requiredRoles={['owner', 'admin', 'client', 'partner']}>
+        <ProtectedRoute requiredRoles={['owner', 'admin', 'client', 'partner', 'client_editor', 'client_viewer']}>
           <Reports />
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/audits">
         <ProtectedRoute requiredRoles={['owner', 'admin', 'client', 'partner']}>
           <Audits />
         </ProtectedRoute>
       </Route>
-      
+
       {/* Admin only routes */}
       <Route path="/users">
         <ProtectedRoute requiredRoles={['owner', 'admin']}>
           <Users />
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/companies">
         <ProtectedRoute requiredRoles={['owner', 'admin']}>
           <Companies />
         </ProtectedRoute>
       </Route>
-      
+
       <Route path="/access-requests">
         <ProtectedRoute requiredRoles={['owner', 'admin']}>
           <AccessRequests />
         </ProtectedRoute>
       </Route>
-      
+
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

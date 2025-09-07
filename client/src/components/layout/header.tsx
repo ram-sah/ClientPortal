@@ -35,7 +35,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             <p className="text-sm text-secondary-600">{subtitle}</p>
           )}
         </div>
-        
+
         <div className="flex items-center space-x-4">
           {/* Notifications */}
           <button 
@@ -46,7 +46,7 @@ export function Header({ title, subtitle }: HeaderProps) {
             {/* Notification badge - hidden by default */}
             <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full hidden"></span>
           </button>
-          
+
           {/* Search */}
           <div className="relative">
             <input 

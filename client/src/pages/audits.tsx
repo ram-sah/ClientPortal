@@ -83,7 +83,7 @@ export default function Audits() {
               data-testid="input-search-audits"
             />
           </div>
-          
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40" data-testid="select-status-filter">
               <SelectValue placeholder="All Status" />
@@ -97,7 +97,7 @@ export default function Audits() {
             </SelectContent>
           </Select>
         </div>
-        
+
         {canCreateAudit && (
           <Button data-testid="button-create-audit">
             <Plus className="w-4 h-4 mr-2" />
@@ -138,7 +138,7 @@ export default function Audits() {
                     <div className="w-12 h-12 bg-primary-100 rounded-lg flex items-center justify-center">
                       <FileText className="text-primary-600 w-6 h-6" />
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-secondary-900 mb-1">{audit.title}</h3>
                       <div className="flex items-center space-x-3 text-sm text-secondary-600">
@@ -155,7 +155,7 @@ export default function Audits() {
                       </div>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     {audit.status === 'published' && (
                       <>

@@ -35,12 +35,12 @@ export default function AccessRequests() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/access-requests'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
-      
+
       toast({
         title: 'Access request updated',
         description: `Request has been ${variables.status}`,
       });
-      
+
       setIsDetailsDialogOpen(false);
       setSelectedRequest(null);
     },
@@ -184,7 +184,7 @@ export default function AccessRequests() {
               data-testid="input-search-requests"
             />
           </div>
-          
+
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-40" data-testid="select-status-filter">
               <SelectValue placeholder="All Status" />
@@ -249,7 +249,7 @@ export default function AccessRequests() {
                         {request.requesterName.split(' ').map((n: string) => n[0]).join('').toUpperCase()}
                       </span>
                     </div>
-                    
+
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center space-x-3 mb-1">
                         <h3 className="font-semibold text-secondary-900">{request.requesterName}</h3>
@@ -274,7 +274,7 @@ export default function AccessRequests() {
                       )}
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center space-x-2">
                     <Button
                       size="sm"
@@ -285,7 +285,7 @@ export default function AccessRequests() {
                       <Eye className="w-4 h-4 mr-2" />
                       Details
                     </Button>
-                    
+
                     {request.status === 'pending' && (
                       <>
                         <Button
@@ -325,7 +325,7 @@ export default function AccessRequests() {
           <DialogHeader>
             <DialogTitle>Access Request Details</DialogTitle>
           </DialogHeader>
-          
+
           {selectedRequest && (
             <div className="space-y-6">
               {/* User Information */}

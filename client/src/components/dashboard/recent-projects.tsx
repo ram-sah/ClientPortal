@@ -53,7 +53,7 @@ export function RecentProjects() {
 
   return (
     <Card className="lg:col-span-2 border border-secondary-200">
-   
+
     </Card>
   );
 }

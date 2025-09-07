@@ -28,7 +28,7 @@ export function AccessRequests() {
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['/api/access-requests'] });
       queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
-      
+
       toast({
         title: 'Access request updated',
         description: `Request has been ${variables.status}`,
@@ -47,7 +47,7 @@ export function AccessRequests() {
     // Get the first client company as default, or let admin choose
     const clientCompanies = (companies as any[]).filter((company: any) => company.type === 'client');
     const defaultCompanyId = clientCompanies.length > 0 ? clientCompanies[0].id : undefined;
-    
+
     updateRequestMutation.mutate({ 
       id, 
       status: 'approved',
@@ -106,7 +106,7 @@ export function AccessRequests() {
           )}
         </div>
       </CardHeader>
-      
+
       <CardContent className="p-0">
         {pendingRequests.length === 0 ? (
           <div className="p-6 text-center text-secondary-500">
