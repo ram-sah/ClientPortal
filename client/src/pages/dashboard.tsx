@@ -46,6 +46,8 @@ export default function Dashboard() {
   const [selectedPeriod, setSelectedPeriod] = useState<
     "weekly" | "monthly" | "quarterly"
   >("weekly");
+  const [currentPage, setCurrentPage] = useState(1);
+  const reportsPerPage = 5;
 
   const { data: stats, isLoading } = useQuery({
     queryKey: ["/api/dashboard/stats"],
@@ -84,6 +86,29 @@ export default function Dashboard() {
       );
     },
   );
+
+  // Pagination logic
+  const totalPages = Math.ceil(userCompanyReports.length / reportsPerPage);
+  const startIndex = (currentPage - 1) * reportsPerPage;
+  const endIndex = startIndex + reportsPerPage;
+  const currentReports = userCompanyReports.slice(startIndex, endIndex);
+
+  const goToPage = (page: number) => {
+    setCurrentPage(page);
+    setExpandedReports([]); // Collapse all reports when changing pages
+  };
+
+  const goToPreviousPage = () => {
+    if (currentPage > 1) {
+      goToPage(currentPage - 1);
+    }
+  };
+
+  const goToNextPage = () => {
+    if (currentPage < totalPages) {
+      goToPage(currentPage + 1);
+    }
+  };
 
   const toggleReportExpansion = (reportId: string) => {
     setExpandedReports((prev) =>
@@ -386,8 +411,57 @@ export default function Dashboard() {
           </div>
 
           {userCompanyReports.length > 0 ? (
-            <div className="space-y-2">
-              {userCompanyReports.map((report: any) => {
+            <div className="space-y-6">
+              {/* Pagination Info */}
+              <div className="flex items-center justify-between">
+                <p className="text-sm text-gray-600">
+                  Showing {startIndex + 1} to {Math.min(endIndex, userCompanyReports.length)} of {userCompanyReports.length} reports
+                </p>
+                {totalPages > 1 && (
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToPreviousPage}
+                      disabled={currentPage === 1}
+                      data-testid="pagination-previous"
+                    >
+                      <ArrowUp className="h-4 w-4 mr-1 rotate-[-90deg]" />
+                      Previous
+                    </Button>
+                    
+                    <div className="flex items-center gap-1">
+                      {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => goToPage(page)}
+                          className="w-8 h-8 p-0"
+                          data-testid={`pagination-page-${page}`}
+                        >
+                          {page}
+                        </Button>
+                      ))}
+                    </div>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                      data-testid="pagination-next"
+                    >
+                      Next
+                      <ArrowUp className="h-4 w-4 ml-1 rotate-90" />
+                    </Button>
+                  </div>
+                )}
+              </div>
+              
+              {/* Reports List */}
+              <div className="space-y-2">
+                {currentReports.map((report: any) => {
                 const isExpanded = expandedReports.includes(report.id);
 
                 // Parse competitor scores if it's a JSON string
@@ -501,7 +575,41 @@ export default function Dashboard() {
                     )}
                   </div>
                 );
-              })}
+                })}
+              </div>
+              
+              {/* Bottom Pagination */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-center pt-4">
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToPreviousPage}
+                      disabled={currentPage === 1}
+                      data-testid="pagination-previous-bottom"
+                    >
+                      <ArrowUp className="h-4 w-4 mr-1 rotate-[-90deg]" />
+                      Previous
+                    </Button>
+                    
+                    <span className="text-sm text-gray-600 px-4">
+                      Page {currentPage} of {totalPages}
+                    </span>
+                    
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={goToNextPage}
+                      disabled={currentPage === totalPages}
+                      data-testid="pagination-next-bottom"
+                    >
+                      Next
+                      <ArrowUp className="h-4 w-4 ml-1 rotate-90" />
+                    </Button>
+                  </div>
+                </div>
+              )}
             </div>
           ) : (
             <div className="text-center py-12 bg-gray-50 rounded-lg">
