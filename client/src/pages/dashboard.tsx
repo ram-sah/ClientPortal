@@ -426,7 +426,7 @@ export default function Dashboard() {
                       disabled={currentPage === 1}
                       data-testid="pagination-previous"
                     >
-                      <ArrowUp className="h-4 w-4 mr-1 rotate-[-90deg]" />
+                      <ArrowUp className="h-4 w-4 mr-1 -rotate-90" />
                       Previous
                     </Button>
                     
@@ -589,7 +589,7 @@ export default function Dashboard() {
                       disabled={currentPage === 1}
                       data-testid="pagination-previous-bottom"
                     >
-                      <ArrowUp className="h-4 w-4 mr-1 rotate-[-90deg]" />
+                      <ArrowUp className="h-4 w-4 mr-1 -rotate-90" />
                       Previous
                     </Button>
                     
