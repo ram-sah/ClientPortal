@@ -11,6 +11,7 @@ import Register from "./pages/register";
 import Dashboard from "./pages/dashboard";
 import Projects from "./pages/projects";
 import Reports from "./pages/reports";
+import NewsMonitoring from "./pages/news-monitoring";
 import Audits from "./pages/audits";
 import Users from "./pages/users";
 import Companies from "./pages/companies";
@@ -39,6 +40,12 @@ function Router() {
       <Route path="/reports">
         <ProtectedRoute requiredRoles={['owner', 'admin', 'client', 'partner', 'client_editor', 'client_viewer']}>
           <Reports />
+        </ProtectedRoute>
+      </Route>
+
+      <Route path="/news-monitoring">
+        <ProtectedRoute requiredRoles={['client', 'client_editor', 'client_viewer']}>
+          <NewsMonitoring />
         </ProtectedRoute>
       </Route>
 
