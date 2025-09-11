@@ -5,6 +5,11 @@ const base = new Airtable({
   apiKey: process.env.AIRTABLE_API_KEY 
 }).base(process.env.AIRTABLE_BASE_ID!);
 
+// Configure News Monitoring Airtable base
+const newsBase = new Airtable({ 
+  apiKey: process.env.AIRTABLE_API_KEY 
+}).base(process.env.AIRTABLE_NEWS_BASE_ID!);
+
 export interface AirtableCompany {
   id: string;
   name: string;
@@ -318,7 +323,7 @@ class AirtableService {
 
   async getNewsMonitoring(): Promise<AirtableNewsMonitoring[]> {
     try {
-      const records = await base('News Scores').select({
+      const records = await newsBase('News Scores').select({
         view: 'Grid view'
       }).all();
 
