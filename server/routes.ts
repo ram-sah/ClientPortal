@@ -173,6 +173,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Airtable news monitoring route
+  app.get("/api/news-monitoring/airtable", requireAuth, async (req, res) => {
+    try {
+      const newsMonitoring = await airtableService.getNewsMonitoring();
+      res.json(newsMonitoring);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get news monitoring from Airtable" });
+    }
+  });
+
   app.get("/api/companies/:id", requireAuth, async (req, res) => {
     try {
       const { id } = req.params;
