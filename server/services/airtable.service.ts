@@ -357,20 +357,34 @@ class AirtableService {
 
   async getNewsMonitoring(brandId?: string): Promise<AirtableNewsMonitoring[]> {
     try {
-      // Step 1: Get News Scores records with optional brand filtering
+      // Step 1: If brandId is provided, get the brand name first
+      let brandName = '';
+      if (brandId) {
+        try {
+          const brandRecord = await newsBase('Brands').find(brandId);
+          brandName = brandRecord.get('Name') as string || '';
+          console.log(`🔍 Debug: Found brand name "${brandName}" for brandId: ${brandId}`);
+        } catch (error) {
+          console.error(`❌ Debug: Could not find brand with ID ${brandId}:`, error);
+          // If brand not found, return empty array rather than failing
+          return [];
+        }
+      }
+
+      // Step 2: Get News Scores records with optional brand filtering
       let selectOptions: any = {
         view: 'Grid view',
         maxRecords: 4,
         sort: [{ field: '_createdTime', direction: 'desc' }]
       };
 
-      // Add brand filtering if brandId is provided - use correct syntax for linked record arrays
-      if (brandId) {
-        // For linked record fields in Airtable, we need to check if the record ID exists in the array
-        // Use SEARCH instead of FIND as it's more reliable for linked record IDs
-        selectOptions.filterByFormula = `SEARCH("${brandId}", ARRAYJOIN({Brands}, ","))`;
-        console.log(`🔍 Debug: Filtering for brandId: ${brandId}`);
-        console.log(`🔍 Debug: Filter formula: SEARCH("${brandId}", ARRAYJOIN({Brands}, ","))`);
+      // Add brand filtering if brandName is available - use brand name in filter formula
+      if (brandName) {
+        // Airtable formulas work with display values (brand names), not record IDs
+        // Use FIND to search for the brand name in the joined list of linked brand names
+        selectOptions.filterByFormula = `FIND("${brandName}", ARRAYJOIN({Brands}))`;
+        console.log(`🔍 Debug: Filtering for brand name: "${brandName}"`);
+        console.log(`🔍 Debug: Filter formula: FIND("${brandName}", ARRAYJOIN({Brands}))`);
       }
 
       const newsScoresRecords = await newsBase('News Scores').select(selectOptions).all();
