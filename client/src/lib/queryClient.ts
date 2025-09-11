@@ -50,9 +50,6 @@ export async function apiRequest(
   
   if (token) {
     headers["Authorization"] = `Bearer ${token}`;
-    console.log('🔐 Frontend: Adding auth token to request:', token.substring(0, 20) + '...', 'for URL:', url);
-  } else {
-    console.log('❌ Frontend: No auth token available for request to:', url);
   }
   
   const res = await fetch(url, {
@@ -81,9 +78,6 @@ export const getQueryFn: <T>(options: {
     
     if (token) {
       headers["Authorization"] = `Bearer ${token}`;
-      console.log('🔐 Query: Adding auth token to request:', token.substring(0, 20) + '...', 'for URL:', url);
-    } else {
-      console.log('❌ Query: No auth token available for request to:', url);
     }
     
     const res = await fetch(url, {

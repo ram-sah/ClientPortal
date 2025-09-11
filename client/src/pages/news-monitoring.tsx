@@ -7,17 +7,33 @@ import { Button } from "@/components/ui/button";
 import { AppLayout } from "../components/layout/app-layout";
 import {
   ExternalLink,
+  Users,
+  Heart,
+  Shield,
+  Target,
+  BookOpen,
   RefreshCw,
   CheckCircle,
+  Calendar,
 } from "lucide-react";
 
 interface NewsItem {
   id: string;
   title: string;
+  url: string;
+  category: string;
+  sentimentScore: number;
+  relevanceScore: number;
+  sourceAuthorityScore: number;
+  engagementScore: number;
+  totalScore: number;
+  weeklyTrendTag: string;
+  recommendedActions: string;
+  contentType: string;
+  createdTime: string;
+  // Additional fields from linked News Monitor table
   articleUrl: string;
-  createdDate: string;
-  url?: string;
-  createdTime?: string;
+  publicationDate: string;
 }
 
 export default function NewsMonitoring() {
@@ -44,6 +60,20 @@ export default function NewsMonitoring() {
   } = useQuery<NewsItem[]>({
     queryKey: ["/api/news-monitoring/airtable"],
   });
+
+  const getScoreColor = (score: number) => {
+    if (score >= 90) return "text-green-600";
+    if (score >= 80) return "text-blue-600";
+    if (score >= 70) return "text-yellow-600";
+    return "text-red-600";
+  };
+
+  const getScoreBgColor = (score: number) => {
+    if (score >= 90) return "bg-green-50";
+    if (score >= 80) return "bg-blue-50";
+    if (score >= 70) return "bg-yellow-50";
+    return "bg-red-50";
+  };
 
   // Animated refresh handler
   const handleRefresh = async () => {
@@ -158,32 +188,44 @@ export default function NewsMonitoring() {
         )}
 
         {newsMonitoringData.length > 0 ? (
-          /* Display latest 4 news items with Title, Article URL, and Created Date */
-          <div className="space-y-4">
+          /* Display all news items with complete data including linked fields */
+          <div className="space-y-6">
             {newsMonitoringData.map((newsItem: NewsItem, index: number) => (
               <Card 
                 key={newsItem.id} 
-                className={`border-border/60 transition-all duration-300 ease-in-out hover:shadow-md ${
+                className={`border-border/60 transition-all duration-500 ease-in-out ${
                   isFetchingNews && !isLoadingNews ? 'animate-pulse opacity-70' : 'opacity-100'
                 }`}
                 data-testid={`news-card-${index}`}
               >
-                <CardContent className="p-6">
+                <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
-                      <h3 className="text-lg font-semibold text-gray-900 mb-3" data-testid={`news-title-${index}`}>
+                      <CardTitle className="text-xl mb-2" data-testid={`news-title-${index}`}>
                         {newsItem.title}
-                      </h3>
+                      </CardTitle>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100" data-testid={`news-category-${index}`}>
+                          {newsItem.category}
+                        </Badge>
+                        <Badge variant="outline" className="text-gray-600" data-testid={`news-content-type-${index}`}>
+                          {newsItem.contentType}
+                        </Badge>
+                        <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100" data-testid={`news-trend-tag-${index}`}>
+                          {newsItem.weeklyTrendTag}
+                        </Badge>
+                      </div>
                       
-                      <div className="space-y-2">
+                      {/* Links Section */}
+                      <div className="space-y-2 mb-3">
                         {newsItem.articleUrl && (
                           <div className="flex items-center gap-2">
-                            <ExternalLink className="h-4 w-4 text-gray-500" />
+                            <ExternalLink className="h-4 w-4 text-blue-600" />
                             <a 
                               href={newsItem.articleUrl}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 text-sm underline"
+                              className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                               data-testid={`news-article-url-${index}`}
                             >
                               View Original Article
@@ -191,13 +233,39 @@ export default function NewsMonitoring() {
                           </div>
                         )}
                         
-                        {newsItem.createdDate && (
+                        {newsItem.url && (
                           <div className="flex items-center gap-2">
-                            <div className="h-4 w-4 text-gray-500 flex items-center justify-center">
-                              📅
-                            </div>
-                            <span className="text-sm text-gray-600" data-testid={`news-created-date-${index}`}>
-                              {new Date(newsItem.createdDate).toLocaleDateString('en-US', {
+                            <ExternalLink className="h-4 w-4 text-gray-500" />
+                            <a 
+                              href={newsItem.url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-blue-600 hover:text-blue-800 text-sm"
+                              data-testid={`news-url-${index}`}
+                            >
+                              View Analysis Source
+                            </a>
+                          </div>
+                        )}
+                        
+                        {newsItem.publicationDate && (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm text-gray-600" data-testid={`news-publication-date-${index}`}>
+                              Published: {new Date(newsItem.publicationDate).toLocaleDateString('en-US', {
+                                year: 'numeric',
+                                month: 'long', 
+                                day: 'numeric'
+                              })}
+                            </span>
+                          </div>
+                        )}
+                        
+                        {newsItem.createdTime && (
+                          <div className="flex items-center gap-2">
+                            <Calendar className="h-4 w-4 text-blue-500" />
+                            <span className="text-sm text-blue-600 font-medium" data-testid={`news-created-date-${index}`}>
+                              Created: {new Date(newsItem.createdTime).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long', 
                                 day: 'numeric'
@@ -207,6 +275,64 @@ export default function NewsMonitoring() {
                         )}
                       </div>
                     </div>
+                    <div className={`text-center p-4 rounded-lg ${getScoreBgColor(newsItem.totalScore)}`}>
+                      <div className={`text-3xl font-bold ${getScoreColor(newsItem.totalScore)}`} data-testid={`news-total-score-${index}`}>
+                        {newsItem.totalScore}%
+                      </div>
+                      <div className="text-sm text-gray-600">Total Score</div>
+                    </div>
+                  </div>
+                </CardHeader>
+                
+                <CardContent>
+                  {/* Score Metrics */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div className="text-center p-4 bg-green-50 rounded-lg transition-all duration-300 hover:shadow-md">
+                      <Heart className="h-8 w-8 text-green-600 mx-auto mb-2 transition-transform duration-200 hover:scale-110" />
+                      <div className="text-2xl font-bold text-green-600" data-testid={`sentiment-score-${index}`}>
+                        {newsItem.sentimentScore}%
+                      </div>
+                      <div className="text-sm text-gray-600">Sentiment Score</div>
+                      <Progress value={newsItem.sentimentScore} className="h-2 mt-2 transition-all duration-500" />
+                    </div>
+
+                    <div className="text-center p-4 bg-blue-50 rounded-lg transition-all duration-300 hover:shadow-md">
+                      <Target className="h-8 w-8 text-blue-600 mx-auto mb-2 transition-transform duration-200 hover:scale-110" />
+                      <div className="text-2xl font-bold text-blue-600" data-testid={`relevance-score-${index}`}>
+                        {newsItem.relevanceScore}%
+                      </div>
+                      <div className="text-sm text-gray-600">Relevance Score</div>
+                      <Progress value={newsItem.relevanceScore} className="h-2 mt-2 transition-all duration-500" />
+                    </div>
+
+                    <div className="text-center p-4 bg-purple-50 rounded-lg transition-all duration-300 hover:shadow-md">
+                      <Shield className="h-8 w-8 text-purple-600 mx-auto mb-2 transition-transform duration-200 hover:scale-110" />
+                      <div className="text-2xl font-bold text-purple-600" data-testid={`authority-score-${index}`}>
+                        {newsItem.sourceAuthorityScore}%
+                      </div>
+                      <div className="text-sm text-gray-600">Source Authority</div>
+                      <Progress value={newsItem.sourceAuthorityScore} className="h-2 mt-2 transition-all duration-500" />
+                    </div>
+
+                    <div className="text-center p-4 bg-orange-50 rounded-lg transition-all duration-300 hover:shadow-md">
+                      <Users className="h-8 w-8 text-orange-600 mx-auto mb-2 transition-transform duration-200 hover:scale-110" />
+                      <div className="text-2xl font-bold text-orange-600" data-testid={`engagement-score-${index}`}>
+                        {newsItem.engagementScore}%
+                      </div>
+                      <div className="text-sm text-gray-600">Engagement Score</div>
+                      <Progress value={newsItem.engagementScore} className="h-2 mt-2 transition-all duration-500" />
+                    </div>
+                  </div>
+
+                  {/* Recommended Actions */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BookOpen className="h-5 w-5 text-gray-600" />
+                      <h3 className="font-medium text-gray-900">Recommended Actions</h3>
+                    </div>
+                    <p className="text-gray-700" data-testid={`recommended-actions-${index}`}>
+                      {newsItem.recommendedActions}
+                    </p>
                   </div>
                 </CardContent>
               </Card>

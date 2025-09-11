@@ -49,13 +49,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const login = async (email: string, password: string) => {
     console.log('🔐 Auth: Starting login process');
     const { user, token: newToken } = await authApi.login({ email, password });
-    console.log('🔐 Auth: Received token from login:', newToken.substring(0, 20) + '...');
     
     setToken(newToken);
     // Force update the auth headers immediately
     updateAuthHeaders(newToken);
     
-    console.log('🔐 Auth: Token stored, current auth token:', getCurrentAuthToken()?.substring(0, 20) + '...');
     await refetch();
   };
 

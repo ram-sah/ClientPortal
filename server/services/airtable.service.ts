@@ -42,10 +42,21 @@ export interface AirtableRenderingReport {
 export interface AirtableNewsMonitoring {
   id: string;
   title: string;
+  url: string;
+  category: string;
+  sentimentScore: number;
+  relevanceScore: number;
+  sourceAuthorityScore: number;
+  engagementScore: number;
+  totalScore: number;
+  weeklyTrendTag: string;
+  recommendedActions: string;
+  contentType: string;
+  createdTime: string;
+  // Additional fields from linked News Monitor table
   articleUrl: string;
-  createdDate: string;
-  url?: string;
-  createdTime?: string;
+  publicationDate: string;
+  [key: string]: any;
 }
 
 class AirtableService {
@@ -343,11 +354,11 @@ class AirtableService {
       newsMonitorRecords.forEach(record => {
         newsMonitorMap.set(record.id, {
           articleUrl: record.get('Article URL') as string || record.get('URL') as string || '',
-          createdDate: record.get('Created Date') as string || record.get('_createdTime') as string || ''
+          publicationDate: record.get('Publication Date') as string || record.get('Created Date') as string || record.get('_createdTime') as string || ''
         });
       });
 
-      // Step 5: Combine data as requested (Title from News Scores + Article URL & Created Date from News Monitor)
+      // Step 5: Combine all original News Scores fields with linked News Monitor data
       return newsScoresRecords.map(record => {
         const newsMonitorLinks = record.get('News Monitor') as string[];
         const linkedNewsMonitor = Array.isArray(newsMonitorLinks) && newsMonitorLinks[0] 
@@ -357,11 +368,28 @@ class AirtableService {
         return {
           id: record.id,
           title: record.get('Title') as string || '',
-          articleUrl: linkedNewsMonitor?.articleUrl || '',
-          createdDate: linkedNewsMonitor?.createdDate || '',
-          // Keep original URL as fallback
           url: record.get('URL') as string || '',
-          createdTime: record.get('_createdTime') as string || new Date().toISOString()
+          category: record.get('Category') as string || '',
+          sentimentScore: Math.round((Number(record.get('Sentiment Score')) || 0) * 100),
+          relevanceScore: Math.round((Number(record.get('Relevance Score')) || 0) * 100),
+          sourceAuthorityScore: Math.round((Number(record.get('Source Authority Score')) || 0) * 100),
+          engagementScore: Math.round((Number(record.get('Engagement Score')) || 0) * 100),
+          totalScore: Math.round((Number(record.get('Total Score')) || 0) * 100),
+          weeklyTrendTag: record.get('Weekly Trend Tag') as string || '',
+          recommendedActions: record.get('Recommended Actions') as string || '',
+          contentType: record.get('Content Type') as string || '',
+          createdTime: record.get('_createdTime') as string || new Date().toISOString(),
+          // Additional fields from linked News Monitor table
+          articleUrl: linkedNewsMonitor?.articleUrl || '',
+          publicationDate: linkedNewsMonitor?.publicationDate || '',
+          // Include all other fields dynamically
+          ...Object.fromEntries(
+            Object.entries(record.fields).filter(([key]) => 
+              !['Title', 'URL', 'Category', 'Sentiment Score', 'Relevance Score', 
+                'Source Authority Score', 'Engagement Score', 'Total Score', 
+                'Weekly Trend Tag', 'Recommended Actions', 'Content Type', '_createdTime', 'News Monitor'].includes(key)
+            )
+          )
         };
       });
     } catch (error) {
