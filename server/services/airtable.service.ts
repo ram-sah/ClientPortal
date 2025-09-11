@@ -365,6 +365,7 @@ class AirtableService {
           ? newsMonitorMap.get(newsMonitorLinks[0]) 
           : null;
 
+
         return {
           id: record.id,
           title: record.get('Title') as string || '',
@@ -372,11 +373,11 @@ class AirtableService {
           category: record.get('Category') as string || '',
           sentimentScore: Math.round((Number(record.get('Sentiment Score')) || 0) * 100),
           relevanceScore: Math.round((Number(record.get('Relevance Score')) || 0) * 100),
-          sourceAuthorityScore: Math.round((Number(record.get('Source Authority Score')) || 0) * 100),
-          engagementScore: Math.round((Number(record.get('Engagement Score')) || 0) * 100),
-          totalScore: Math.round((Number(record.get('Total Score')) || 0) * 100),
-          weeklyTrendTag: record.get('Weekly Trend Tag') as string || '',
-          recommendedActions: record.get('Recommended Actions') as string || '',
+          sourceAuthorityScore: Math.round((Number(record.get('SourceAuthorityScore')) || 0) * 100),
+          engagementScore: Math.round((Number(record.get('EngagementScore')) || 0) * 100),
+          totalScore: Math.round((Number(record.get('TotalScore')) || 0) * 100),
+          weeklyTrendTag: record.get('WeeklyTrendTag') as string || '',
+          recommendedActions: record.get('RecommendedActions') as string || '',
           contentType: record.get('Content Type') as string || '',
           createdTime: record.get('_createdTime') as string || new Date().toISOString(),
           // Additional fields from linked News Monitor table
@@ -386,8 +387,8 @@ class AirtableService {
           ...Object.fromEntries(
             Object.entries(record.fields).filter(([key]) => 
               !['Title', 'URL', 'Category', 'Sentiment Score', 'Relevance Score', 
-                'Source Authority Score', 'Engagement Score', 'Total Score', 
-                'Weekly Trend Tag', 'Recommended Actions', 'Content Type', '_createdTime', 'News Monitor'].includes(key)
+                'SourceAuthorityScore', 'EngagementScore', 'TotalScore', 
+                'WeeklyTrendTag', 'RecommendedActions', 'Content Type', '_createdTime', 'News Monitor'].includes(key)
             )
           )
         };
