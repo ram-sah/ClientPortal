@@ -42,18 +42,10 @@ export interface AirtableRenderingReport {
 export interface AirtableNewsMonitoring {
   id: string;
   title: string;
-  url: string;
-  category: string;
-  sentimentScore: number;
-  relevanceScore: number;
-  sourceAuthorityScore: number;
-  engagementScore: number;
-  totalScore: number;
-  weeklyTrendTag: string;
-  recommendedActions: string;
-  contentType: string;
-  createdTime: string;
-  [key: string]: any;
+  articleUrl: string;
+  createdDate: string;
+  url?: string;
+  createdTime?: string;
 }
 
 class AirtableService {
@@ -323,36 +315,55 @@ class AirtableService {
 
   async getNewsMonitoring(): Promise<AirtableNewsMonitoring[]> {
     try {
-      const records = await newsBase('News Scores').select({
+      // Step 1: Get News Scores records
+      const newsScoresRecords = await newsBase('News Scores').select({
         view: 'Grid view',
         maxRecords: 4,
         sort: [{ field: '_createdTime', direction: 'desc' }]
       }).all();
-      
-      
-      return records.map(record => ({
-        id: record.id,
-        title: record.get('Title') as string || '',
-        url: record.get('URL') as string || '',
-        category: record.get('Category') as string || '',
-        sentimentScore: Math.round((Number(record.get('Sentiment Score')) || 0) * 100),
-        relevanceScore: Math.round((Number(record.get('Relevance Score')) || 0) * 100),
-        sourceAuthorityScore: Math.round((Number(record.get('SourceAuthorityScore')) || 0) * 100),
-        engagementScore: Math.round((Number(record.get('EngagementScore')) || 0) * 100),
-        totalScore: Math.round((Number(record.get('TotalScore')) || 0) * 100),
-        weeklyTrendTag: record.get('WeeklyTrendTag') as string || '',
-        recommendedActions: record.get('RecommendedActions') as string || '',
-        contentType: record.get('Content Type') as string || '',
-        createdTime: record.get('_createdTime') as string || new Date().toISOString(),
-        // Include all other fields dynamically
-        ...Object.fromEntries(
-          Object.entries(record.fields).filter(([key]) => 
-            !['Title', 'URL', 'Category', 'Sentiment Score', 'Relevance Score', 
-              'SourceAuthorityScore', 'EngagementScore', 'TotalScore', 
-              'WeeklyTrendTag', 'RecommendedActions', 'Content Type', '_createdTime'].includes(key)
-          )
-        )
-      }));
+
+      // Step 2: Extract linked News Monitor record IDs
+      const newsMonitorIds: string[] = [];
+      newsScoresRecords.forEach(record => {
+        const newsMonitorLinks = record.get('News Monitor') as string[];
+        if (Array.isArray(newsMonitorLinks)) {
+          newsMonitorIds.push(...newsMonitorLinks);
+        }
+      });
+
+      // Step 3: Fetch linked News Monitor records if we have IDs
+      const newsMonitorRecords = newsMonitorIds.length > 0 
+        ? await newsBase('News Monitor').select({
+            filterByFormula: `OR(${newsMonitorIds.map(id => `RECORD_ID() = '${id}'`).join(', ')})`
+          }).all()
+        : [];
+
+      // Step 4: Create a lookup map for News Monitor data
+      const newsMonitorMap = new Map();
+      newsMonitorRecords.forEach(record => {
+        newsMonitorMap.set(record.id, {
+          articleUrl: record.get('Article URL') as string || record.get('URL') as string || '',
+          createdDate: record.get('Created Date') as string || record.get('_createdTime') as string || ''
+        });
+      });
+
+      // Step 5: Combine data as requested (Title from News Scores + Article URL & Created Date from News Monitor)
+      return newsScoresRecords.map(record => {
+        const newsMonitorLinks = record.get('News Monitor') as string[];
+        const linkedNewsMonitor = Array.isArray(newsMonitorLinks) && newsMonitorLinks[0] 
+          ? newsMonitorMap.get(newsMonitorLinks[0]) 
+          : null;
+
+        return {
+          id: record.id,
+          title: record.get('Title') as string || '',
+          articleUrl: linkedNewsMonitor?.articleUrl || '',
+          createdDate: linkedNewsMonitor?.createdDate || '',
+          // Keep original URL as fallback
+          url: record.get('URL') as string || '',
+          createdTime: record.get('_createdTime') as string || new Date().toISOString()
+        };
+      });
     } catch (error) {
       console.error('Error fetching news monitoring from Airtable:', error);
       throw new Error(`Failed to fetch news monitoring from Airtable: ${error instanceof Error ? error.message : 'Unknown error'}`);
