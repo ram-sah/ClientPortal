@@ -329,26 +329,27 @@ class AirtableService {
         sort: [{ field: '_createdTime', direction: 'desc' }]
       }).all();
       
+      
       return records.map(record => ({
         id: record.id,
         title: record.get('Title') as string || '',
         url: record.get('URL') as string || '',
         category: record.get('Category') as string || '',
-        sentimentScore: Number(record.get('Sentiment Score %')) || 0,
-        relevanceScore: Number(record.get('Relevance Score %')) || 0,
-        sourceAuthorityScore: Number(record.get('Source Authority Score %')) || 0,
-        engagementScore: Number(record.get('Engagement Score %')) || 0,
-        totalScore: Number(record.get('Total Score %')) || 0,
-        weeklyTrendTag: record.get('Weekly Trend Tag') as string || '',
-        recommendedActions: record.get('Recommended Actions') as string || '',
+        sentimentScore: Math.round((Number(record.get('Sentiment Score')) || 0) * 100),
+        relevanceScore: Math.round((Number(record.get('Relevance Score')) || 0) * 100),
+        sourceAuthorityScore: Math.round((Number(record.get('SourceAuthorityScore')) || 0) * 100),
+        engagementScore: Math.round((Number(record.get('EngagementScore')) || 0) * 100),
+        totalScore: Math.round((Number(record.get('TotalScore')) || 0) * 100),
+        weeklyTrendTag: record.get('WeeklyTrendTag') as string || '',
+        recommendedActions: record.get('RecommendedActions') as string || '',
         contentType: record.get('Content Type') as string || '',
         createdTime: record.get('_createdTime') as string || new Date().toISOString(),
         // Include all other fields dynamically
         ...Object.fromEntries(
           Object.entries(record.fields).filter(([key]) => 
-            !['Title', 'URL', 'Category', 'Sentiment Score %', 'Relevance Score %', 
-              'Source Authority Score %', 'Engagement Score %', 'Total Score %', 
-              'Weekly Trend Tag', 'Recommended Actions', 'Content Type', '_createdTime'].includes(key)
+            !['Title', 'URL', 'Category', 'Sentiment Score', 'Relevance Score', 
+              'SourceAuthorityScore', 'EngagementScore', 'TotalScore', 
+              'WeeklyTrendTag', 'RecommendedActions', 'Content Type', '_createdTime'].includes(key)
           )
         )
       }));

@@ -40,7 +40,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
   }
 
   const token = authHeader.split(' ')[1];
-  console.log('🔐 Auth: Token received:', token.substring(0, 20) + '...');
+  console.log('🔐 Auth: Token received');
   
   const payload = await verifyToken(token);
   
