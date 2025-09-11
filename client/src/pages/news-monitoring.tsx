@@ -7,13 +7,11 @@ import { Button } from "@/components/ui/button";
 import { AppLayout } from "../components/layout/app-layout";
 import {
   ExternalLink,
-  TrendingUp,
   Users,
   Heart,
   Shield,
   Target,
   BookOpen,
-  BarChart3,
   RefreshCw,
   CheckCircle,
 } from "lucide-react";
@@ -312,67 +310,6 @@ export default function NewsMonitoring() {
           </Card>
         )}
 
-        {/* Additional Monitoring Sections */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <TrendingUp className="h-5 w-5" />
-                Trending Topics
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-3">
-                <div className="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
-                  <span className="font-medium">B2B Marketing Strategies</span>
-                  <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-100">Hot</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
-                  <span className="font-medium">Lead Generation</span>
-                  <Badge className="bg-green-100 text-green-800 hover:bg-green-100">Rising</Badge>
-                </div>
-                <div className="flex items-center justify-between p-3 bg-purple-50 rounded-lg">
-                  <span className="font-medium">Digital Transformation</span>
-                  <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">Stable</Badge>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Content Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Article Views</span>
-                    <span className="font-medium">12,450</span>
-                  </div>
-                  <Progress value={85} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Social Shares</span>
-                    <span className="font-medium">892</span>
-                  </div>
-                  <Progress value={67} className="h-2" />
-                </div>
-                <div>
-                  <div className="flex justify-between text-sm mb-1">
-                    <span>Comments</span>
-                    <span className="font-medium">156</span>
-                  </div>
-                  <Progress value={42} className="h-2" />
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
       </div>
     </AppLayout>
   );
