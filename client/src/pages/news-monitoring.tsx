@@ -140,9 +140,8 @@ export default function NewsMonitoring() {
         {/* Header Section */}
         <div className="flex items-center justify-between">
           <div>
-            <h2 className="text-2xl font-semibold">News & Media Monitoring</h2>
             <p className="text-secondary-600">
-              Track industry news, mentions, and competitor activities
+              Track current 4 industry news, mentions, and activities
             </p>
             {lastRefreshTime && (
               <p className="text-sm text-gray-500 mt-1">
