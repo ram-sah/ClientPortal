@@ -1,4 +1,3 @@
-import { useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -17,6 +16,22 @@ import {
   RefreshCw,
 } from "lucide-react";
 
+interface NewsItem {
+  id: string;
+  title: string;
+  url: string;
+  category: string;
+  sentimentScore: number;
+  relevanceScore: number;
+  sourceAuthorityScore: number;
+  engagementScore: number;
+  totalScore: number;
+  weeklyTrendTag: string;
+  recommendedActions: string;
+  contentType: string;
+  createdTime: string;
+}
+
 export default function NewsMonitoring() {
   const currentTime = new Date().toLocaleString("en-US", {
     weekday: "long",
@@ -32,12 +47,11 @@ export default function NewsMonitoring() {
     data: newsMonitoringData = [],
     refetch: refetchNewsMonitoring,
     isLoading: isLoadingNews,
-  } = useQuery({
+  } = useQuery<NewsItem[]>({
     queryKey: ["/api/news-monitoring/airtable"],
   });
 
-  // Get the first news item to display (you can extend this to show multiple items)
-  const newsItem = newsMonitoringData.length > 0 ? newsMonitoringData[0] : null;
+  // Display all news items (latest 4)
 
   const getScoreColor = (score: number) => {
     if (score >= 90) return "text-green-600";
@@ -96,98 +110,102 @@ export default function NewsMonitoring() {
           </Button>
         </div>
 
-        {newsItem ? (
-          /* Main News Item with real data */
-          <Card className="border-border/60">
-            <CardHeader>
-              <div className="flex items-start justify-between gap-4">
-                <div className="flex-1">
-                  <CardTitle className="text-xl mb-2" data-testid="news-title">
-                    {newsItem.title}
-                  </CardTitle>
-                  <div className="flex items-center gap-2 mb-3">
-                    <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100">
-                      {newsItem.category}
-                    </Badge>
-                    <Badge variant="outline" className="text-gray-600">
-                      {newsItem.contentType}
-                    </Badge>
-                    <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100">
-                      {newsItem.weeklyTrendTag}
-                    </Badge>
+        {newsMonitoringData.length > 0 ? (
+          /* Display all news items with real data */
+          <div className="space-y-6">
+            {newsMonitoringData.map((newsItem: NewsItem, index: number) => (
+              <Card key={newsItem.id} className="border-border/60">
+                <CardHeader>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex-1">
+                      <CardTitle className="text-xl mb-2" data-testid={`news-title-${index}`}>
+                        {newsItem.title}
+                      </CardTitle>
+                      <div className="flex items-center gap-2 mb-3">
+                        <Badge className="bg-purple-100 text-purple-800 hover:bg-purple-100" data-testid={`news-category-${index}`}>
+                          {newsItem.category}
+                        </Badge>
+                        <Badge variant="outline" className="text-gray-600" data-testid={`news-content-type-${index}`}>
+                          {newsItem.contentType}
+                        </Badge>
+                        <Badge className="bg-indigo-100 text-indigo-800 hover:bg-indigo-100" data-testid={`news-trend-tag-${index}`}>
+                          {newsItem.weeklyTrendTag}
+                        </Badge>
+                      </div>
+                      <a 
+                        href={newsItem.url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
+                        data-testid={`news-url-${index}`}
+                      >
+                        <ExternalLink className="h-4 w-4" />
+                        View Article
+                      </a>
+                    </div>
+                    <div className={`text-center p-4 rounded-lg ${getScoreBgColor(newsItem.totalScore)}`}>
+                      <div className={`text-3xl font-bold ${getScoreColor(newsItem.totalScore)}`} data-testid={`news-total-score-${index}`}>
+                        {newsItem.totalScore}%
+                      </div>
+                      <div className="text-sm text-gray-600">Total Score</div>
+                    </div>
                   </div>
-                  <a 
-                    href={newsItem.url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex items-center gap-2 text-blue-600 hover:text-blue-800 text-sm"
-                    data-testid="news-url"
-                  >
-                    <ExternalLink className="h-4 w-4" />
-                    View Article
-                  </a>
-                </div>
-                <div className={`text-center p-4 rounded-lg ${getScoreBgColor(newsItem.totalScore)}`}>
-                  <div className={`text-3xl font-bold ${getScoreColor(newsItem.totalScore)}`}>
-                    {newsItem.totalScore}%
-                  </div>
-                  <div className="text-sm text-gray-600">Total Score</div>
-                </div>
-              </div>
-            </CardHeader>
-            
-            <CardContent>
-              {/* Score Metrics */}
-              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                <div className="text-center p-4 bg-green-50 rounded-lg">
-                  <Heart className="h-8 w-8 text-green-600 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-green-600" data-testid="sentiment-score">
-                    {newsItem.sentimentScore}%
-                  </div>
-                  <div className="text-sm text-gray-600">Sentiment Score</div>
-                  <Progress value={newsItem.sentimentScore} className="h-2 mt-2" />
-                </div>
+                </CardHeader>
+                
+                <CardContent>
+                  {/* Score Metrics */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+                    <div className="text-center p-4 bg-green-50 rounded-lg">
+                      <Heart className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-green-600" data-testid={`sentiment-score-${index}`}>
+                        {newsItem.sentimentScore}%
+                      </div>
+                      <div className="text-sm text-gray-600">Sentiment Score</div>
+                      <Progress value={newsItem.sentimentScore} className="h-2 mt-2" />
+                    </div>
 
-                <div className="text-center p-4 bg-blue-50 rounded-lg">
-                  <Target className="h-8 w-8 text-blue-600 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-blue-600" data-testid="relevance-score">
-                    {newsItem.relevanceScore}%
-                  </div>
-                  <div className="text-sm text-gray-600">Relevance Score</div>
-                  <Progress value={newsItem.relevanceScore} className="h-2 mt-2" />
-                </div>
+                    <div className="text-center p-4 bg-blue-50 rounded-lg">
+                      <Target className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-blue-600" data-testid={`relevance-score-${index}`}>
+                        {newsItem.relevanceScore}%
+                      </div>
+                      <div className="text-sm text-gray-600">Relevance Score</div>
+                      <Progress value={newsItem.relevanceScore} className="h-2 mt-2" />
+                    </div>
 
-                <div className="text-center p-4 bg-purple-50 rounded-lg">
-                  <Shield className="h-8 w-8 text-purple-600 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-purple-600" data-testid="authority-score">
-                    {newsItem.sourceAuthorityScore}%
-                  </div>
-                  <div className="text-sm text-gray-600">Source Authority</div>
-                  <Progress value={newsItem.sourceAuthorityScore} className="h-2 mt-2" />
-                </div>
+                    <div className="text-center p-4 bg-purple-50 rounded-lg">
+                      <Shield className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-purple-600" data-testid={`authority-score-${index}`}>
+                        {newsItem.sourceAuthorityScore}%
+                      </div>
+                      <div className="text-sm text-gray-600">Source Authority</div>
+                      <Progress value={newsItem.sourceAuthorityScore} className="h-2 mt-2" />
+                    </div>
 
-                <div className="text-center p-4 bg-orange-50 rounded-lg">
-                  <Users className="h-8 w-8 text-orange-600 mx-auto mb-2" />
-                  <div className="text-2xl font-bold text-orange-600" data-testid="engagement-score">
-                    {newsItem.engagementScore}%
+                    <div className="text-center p-4 bg-orange-50 rounded-lg">
+                      <Users className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+                      <div className="text-2xl font-bold text-orange-600" data-testid={`engagement-score-${index}`}>
+                        {newsItem.engagementScore}%
+                      </div>
+                      <div className="text-sm text-gray-600">Engagement Score</div>
+                      <Progress value={newsItem.engagementScore} className="h-2 mt-2" />
+                    </div>
                   </div>
-                  <div className="text-sm text-gray-600">Engagement Score</div>
-                  <Progress value={newsItem.engagementScore} className="h-2 mt-2" />
-                </div>
-              </div>
 
-              {/* Recommended Actions */}
-              <div className="bg-gray-50 rounded-lg p-4">
-                <div className="flex items-center gap-2 mb-2">
-                  <BookOpen className="h-5 w-5 text-gray-600" />
-                  <h3 className="font-medium text-gray-900">Recommended Actions</h3>
-                </div>
-                <p className="text-gray-700" data-testid="recommended-actions">
-                  {newsItem.recommendedActions}
-                </p>
-              </div>
-            </CardContent>
-          </Card>
+                  {/* Recommended Actions */}
+                  <div className="bg-gray-50 rounded-lg p-4">
+                    <div className="flex items-center gap-2 mb-2">
+                      <BookOpen className="h-5 w-5 text-gray-600" />
+                      <h3 className="font-medium text-gray-900">Recommended Actions</h3>
+                    </div>
+                    <p className="text-gray-700" data-testid={`recommended-actions-${index}`}>
+                      {newsItem.recommendedActions}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
         ) : (
           /* No data available */
           <Card className="border-border/60">

@@ -323,18 +323,11 @@ class AirtableService {
 
   async getNewsMonitoring(): Promise<AirtableNewsMonitoring[]> {
     try {
-      console.log('🔍 News Monitoring Debug:');
-      console.log('📰 AIRTABLE_NEWS_BASE_ID:', process.env.AIRTABLE_NEWS_BASE_ID);
-      console.log('🗝️  AIRTABLE_API_KEY exists:', !!process.env.AIRTABLE_API_KEY);
-      console.log('🗝️  AIRTABLE_API_KEY length:', process.env.AIRTABLE_API_KEY?.length || 0);
-      
       const records = await newsBase('News Scores').select({
         view: 'Grid view',
         maxRecords: 4,
         sort: [{ field: '_createdTime', direction: 'desc' }]
       }).all();
-      
-      console.log('✅ Successfully fetched', records.length, 'news monitoring records');
       
       return records.map(record => ({
         id: record.id,
@@ -361,13 +354,6 @@ class AirtableService {
       }));
     } catch (error) {
       console.error('Error fetching news monitoring from Airtable:', error);
-      if (error.error === 'NOT_AUTHORIZED') {
-        console.error('🚨 API key does not have access to the News Monitoring base');
-        console.error('📋 Please check:');
-        console.error('   1. API key has data.records:read scope');
-        console.error('   2. API key has access to base:', process.env.AIRTABLE_NEWS_BASE_ID);
-        console.error('   3. Table "News Scores" exists in the base');
-      }
       throw new Error(`Failed to fetch news monitoring from Airtable: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
   }
