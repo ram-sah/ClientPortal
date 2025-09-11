@@ -364,12 +364,33 @@ class AirtableService {
         sort: [{ field: '_createdTime', direction: 'desc' }]
       };
 
-      // Add brand filtering if brandId is provided
+      // Add brand filtering if brandId is provided - use multiple approaches for robust filtering
       if (brandId) {
-        selectOptions.filterByFormula = `SEARCH("${brandId}", ARRAYJOIN({Brands}))`;
+        // Use a more robust formula that checks if the brandId exists in the linked Brands field
+        // This approach uses OR with multiple potential matches to handle edge cases
+        selectOptions.filterByFormula = `OR(
+          FIND("${brandId}", ARRAYJOIN({Brands})),
+          {Brands} = "${brandId}"
+        )`;
+        console.log(`🔍 Debug: Filtering for brandId: ${brandId}`);
+        console.log(`🔍 Debug: Filter formula: OR(FIND("${brandId}", ARRAYJOIN({Brands})), {Brands} = "${brandId}")`);
       }
 
       const newsScoresRecords = await newsBase('News Scores').select(selectOptions).all();
+      console.log(`📊 Debug: Found ${newsScoresRecords.length} News Scores records`);
+
+      // Debug: Log brands field for all records to understand the linking
+      if (newsScoresRecords.length > 0) {
+        console.log('🔍 Debug: All records brand associations:');
+        newsScoresRecords.forEach((record, index) => {
+          const brands = record.get('Brands');
+          const title = record.get('Title');
+          console.log(`  Record ${index + 1}: "${title}" -> Brands: ${JSON.stringify(brands)}`);
+        });
+        
+        const firstRecord = newsScoresRecords[0];
+        console.log('🔍 Debug: First record fields:', Object.keys(firstRecord.fields));
+      }
 
       // Step 2: Extract linked News Monitor record IDs
       const newsMonitorIds: string[] = [];

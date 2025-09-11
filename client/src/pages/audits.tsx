@@ -158,16 +158,10 @@ export default function Audits() {
 
                   <div className="flex items-center space-x-2">
                     {audit.status === 'published' && (
-                      <>
-                        <Button size="sm" variant="outline" data-testid={`button-view-${audit.id}`}>
-                          <Eye className="w-4 h-4 mr-2" />
-                          View
-                        </Button>
-                        <Button size="sm" variant="outline" data-testid={`button-download-${audit.id}`}>
-                          <Download className="w-4 h-4 mr-2" />
-                          Download
-                        </Button>
-                      </>
+                      <Button size="sm" variant="outline" data-testid={`button-download-${audit.id}`}>
+                        <Download className="w-4 h-4 mr-2" />
+                        Download
+                      </Button>
                     )}
                     {audit.status === 'draft' && canCreateAudit && (
                       <Button size="sm" data-testid={`button-edit-${audit.id}`}>

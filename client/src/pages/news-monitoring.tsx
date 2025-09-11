@@ -188,7 +188,7 @@ export default function NewsMonitoring() {
         <div className="flex items-center justify-between">
           <div>
             <p className="text-secondary-600">
-              Track current 4 industry news, mentions, and activities
+              Track current 5 industry news, mentions, and activities
             </p>
             {lastRefreshTime && (
               <p className="text-sm text-gray-500 mt-1">
