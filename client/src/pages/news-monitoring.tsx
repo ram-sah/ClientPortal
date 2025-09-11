@@ -190,7 +190,7 @@ export default function NewsMonitoring() {
         {newsMonitoringData.length > 0 ? (
           /* Display all news items with complete data including linked fields */
           <div className="space-y-6">
-            {newsMonitoringData.map((newsItem: NewsItem, index: number) => (
+            {newsMonitoringData.slice(0, 4).map((newsItem: NewsItem, index: number) => (
               <Card 
                 key={newsItem.id} 
                 className={`border-border/60 transition-all duration-500 ease-in-out ${
@@ -216,7 +216,7 @@ export default function NewsMonitoring() {
                         </Badge>
                       </div>
                       
-                      {/* Links Section */}
+                      {/* Links and Dates Section */}
                       <div className="space-y-2 mb-3">
                         {newsItem.articleUrl && (
                           <div className="flex items-center gap-2">
@@ -228,43 +228,15 @@ export default function NewsMonitoring() {
                               className="text-blue-600 hover:text-blue-800 text-sm font-medium"
                               data-testid={`news-article-url-${index}`}
                             >
-                              View Original Article
+                              Article URL
                             </a>
-                          </div>
-                        )}
-                        
-                        {newsItem.url && (
-                          <div className="flex items-center gap-2">
-                            <ExternalLink className="h-4 w-4 text-gray-500" />
-                            <a 
-                              href={newsItem.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="text-blue-600 hover:text-blue-800 text-sm"
-                              data-testid={`news-url-${index}`}
-                            >
-                              View Analysis Source
-                            </a>
-                          </div>
-                        )}
-                        
-                        {newsItem.publicationDate && (
-                          <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm text-gray-600" data-testid={`news-publication-date-${index}`}>
-                              Published: {new Date(newsItem.publicationDate).toLocaleDateString('en-US', {
-                                year: 'numeric',
-                                month: 'long', 
-                                day: 'numeric'
-                              })}
-                            </span>
                           </div>
                         )}
                         
                         {newsItem.createdTime && (
                           <div className="flex items-center gap-2">
-                            <Calendar className="h-4 w-4 text-blue-500" />
-                            <span className="text-sm text-blue-600 font-medium" data-testid={`news-created-date-${index}`}>
+                            <Calendar className="h-4 w-4 text-gray-500" />
+                            <span className="text-sm text-gray-600" data-testid={`news-created-date-${index}`}>
                               Created: {new Date(newsItem.createdTime).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long', 
