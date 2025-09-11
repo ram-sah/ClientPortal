@@ -354,7 +354,7 @@ class AirtableService {
       newsMonitorRecords.forEach(record => {
         newsMonitorMap.set(record.id, {
           articleUrl: record.get('Article URL') as string || record.get('URL') as string || '',
-          publicationDate: record.get('Publication Date') as string || record.get('Created Date') as string || record.get('_createdTime') as string || ''
+          publicationDate: record.get('Publication Date') as string || record.get('Publication date') as string || record.get('Created Date') as string || record.get('_createdTime') as string || ''
         });
       });
 

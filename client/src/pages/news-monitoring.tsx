@@ -233,11 +233,11 @@ export default function NewsMonitoring() {
                           </div>
                         )}
                         
-                        {newsItem.createdTime && (
+                        {newsItem.publicationDate && (
                           <div className="flex items-center gap-2">
                             <Calendar className="h-4 w-4 text-gray-500" />
-                            <span className="text-sm text-gray-600" data-testid={`news-created-date-${index}`}>
-                              Created: {new Date(newsItem.createdTime).toLocaleDateString('en-US', {
+                            <span className="text-sm text-gray-600" data-testid={`news-publication-date-${index}`}>
+                              Publication Date: {new Date(newsItem.publicationDate).toLocaleDateString('en-US', {
                                 year: 'numeric',
                                 month: 'long', 
                                 day: 'numeric'
