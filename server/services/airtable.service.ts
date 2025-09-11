@@ -364,16 +364,13 @@ class AirtableService {
         sort: [{ field: '_createdTime', direction: 'desc' }]
       };
 
-      // Add brand filtering if brandId is provided - use multiple approaches for robust filtering
+      // Add brand filtering if brandId is provided - use correct syntax for linked record arrays
       if (brandId) {
-        // Use a more robust formula that checks if the brandId exists in the linked Brands field
-        // This approach uses OR with multiple potential matches to handle edge cases
-        selectOptions.filterByFormula = `OR(
-          FIND("${brandId}", ARRAYJOIN({Brands})),
-          {Brands} = "${brandId}"
-        )`;
+        // For linked record fields in Airtable, we need to check if the record ID exists in the array
+        // Use SEARCH instead of FIND as it's more reliable for linked record IDs
+        selectOptions.filterByFormula = `SEARCH("${brandId}", ARRAYJOIN({Brands}, ","))`;
         console.log(`🔍 Debug: Filtering for brandId: ${brandId}`);
-        console.log(`🔍 Debug: Filter formula: OR(FIND("${brandId}", ARRAYJOIN({Brands})), {Brands} = "${brandId}")`);
+        console.log(`🔍 Debug: Filter formula: SEARCH("${brandId}", ARRAYJOIN({Brands}, ","))`);
       }
 
       const newsScoresRecords = await newsBase('News Scores').select(selectOptions).all();
@@ -417,8 +414,10 @@ class AirtableService {
         });
       });
 
-      // Step 5: Combine all original News Scores fields with linked News Monitor data  
-      return newsScoresRecords.map(record => {
+      // Step 5: Combine all original News Scores fields with linked News Monitor data
+      console.log(`🔄 Processing ${newsScoresRecords.length} records for response...`);
+      
+      const transformedRecords = newsScoresRecords.map(record => {
         const newsMonitorLinks = record.get('News Monitor') as string[];
         const linkedNewsMonitor = Array.isArray(newsMonitorLinks) && newsMonitorLinks[0] 
           ? newsMonitorMap.get(newsMonitorLinks[0]) 
@@ -461,6 +460,11 @@ class AirtableService {
           )
         };
       });
+      
+      console.log(`✅ Returning ${transformedRecords.length} transformed records to frontend`);
+      console.log(`📦 Sample record structure:`, JSON.stringify(transformedRecords[0] || {}, null, 2));
+      
+      return transformedRecords;
     } catch (error) {
       console.error('Error fetching news monitoring from Airtable:', error);
       throw new Error(`Failed to fetch news monitoring from Airtable: ${error instanceof Error ? error.message : 'Unknown error'}`);
