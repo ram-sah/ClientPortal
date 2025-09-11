@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +15,7 @@ import {
   BookOpen,
   BarChart3,
   RefreshCw,
+  CheckCircle,
 } from "lucide-react";
 
 interface NewsItem {
@@ -33,6 +35,11 @@ interface NewsItem {
 }
 
 export default function NewsMonitoring() {
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [refreshProgress, setRefreshProgress] = useState(0);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [lastRefreshTime, setLastRefreshTime] = useState<Date | null>(null);
+
   const currentTime = new Date().toLocaleString("en-US", {
     weekday: "long",
     year: "numeric",
@@ -47,9 +54,48 @@ export default function NewsMonitoring() {
     data: newsMonitoringData = [],
     refetch: refetchNewsMonitoring,
     isLoading: isLoadingNews,
+    isFetching: isFetchingNews,
   } = useQuery<NewsItem[]>({
     queryKey: ["/api/news-monitoring/airtable"],
   });
+
+  // Animated refresh handler
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    setRefreshProgress(0);
+    setShowSuccess(false);
+
+    // Simulate progress animation
+    const progressInterval = setInterval(() => {
+      setRefreshProgress(prev => {
+        if (prev >= 90) {
+          clearInterval(progressInterval);
+          return 90;
+        }
+        return prev + Math.random() * 15;
+      });
+    }, 100);
+
+    try {
+      await refetchNewsMonitoring();
+      setRefreshProgress(100);
+      setLastRefreshTime(new Date());
+      setShowSuccess(true);
+      
+      // Hide success message after 3 seconds
+      setTimeout(() => {
+        setShowSuccess(false);
+      }, 3000);
+    } catch (error) {
+      console.error('Failed to refresh news data:', error);
+    } finally {
+      clearInterval(progressInterval);
+      setTimeout(() => {
+        setIsRefreshing(false);
+        setRefreshProgress(0);
+      }, 1000);
+    }
+  };
 
   // Display all news items (latest 4)
 
@@ -95,26 +141,60 @@ export default function NewsMonitoring() {
             <p className="text-secondary-600">
               Track industry news, mentions, and competitor activities
             </p>
+            {lastRefreshTime && (
+              <p className="text-sm text-gray-500 mt-1">
+                Last refreshed: {lastRefreshTime.toLocaleTimeString()}
+              </p>
+            )}
           </div>
-          <Button
-            onClick={() => refetchNewsMonitoring()}
-            variant="outline"
-            size="sm"
-            className="flex items-center gap-2"
-            disabled={isLoadingNews}
-          >
-            <RefreshCw
-              className={`h-4 w-4 ${isLoadingNews ? "animate-spin" : ""}`}
-            />
-            Refresh Data
-          </Button>
+          <div className="flex items-center gap-3">
+            {showSuccess && (
+              <div className="flex items-center gap-2 text-green-600 animate-fade-in" data-testid="refresh-success">
+                <CheckCircle className="h-4 w-4" />
+                <span className="text-sm font-medium">Updated!</span>
+              </div>
+            )}
+            <Button
+              onClick={handleRefresh}
+              variant="outline"
+              size="sm"
+              className="flex items-center gap-2"
+              disabled={isLoadingNews || isRefreshing}
+              data-testid="button-refresh"
+            >
+              <RefreshCw
+                className={`h-4 w-4 ${isLoadingNews || isRefreshing ? "animate-spin" : ""}`}
+              />
+              {isRefreshing ? "Refreshing..." : "Refresh Data"}
+            </Button>
+          </div>
         </div>
+
+        {/* Progress Bar for Refresh */}
+        {isRefreshing && (
+          <div className="bg-white rounded-lg border p-4 animate-fade-in" data-testid="refresh-progress">
+            <div className="flex items-center justify-between mb-2">
+              <span className="text-sm font-medium text-gray-700">Fetching latest news...</span>
+              <span className="text-sm text-gray-500">{Math.round(refreshProgress)}%</span>
+            </div>
+            <Progress 
+              value={refreshProgress} 
+              className="h-2 transition-all duration-300 ease-out"
+            />
+          </div>
+        )}
 
         {newsMonitoringData.length > 0 ? (
           /* Display all news items with real data */
           <div className="space-y-6">
             {newsMonitoringData.map((newsItem: NewsItem, index: number) => (
-              <Card key={newsItem.id} className="border-border/60">
+              <Card 
+                key={newsItem.id} 
+                className={`border-border/60 transition-all duration-500 ease-in-out ${
+                  isFetchingNews && !isLoadingNews ? 'animate-pulse opacity-70' : 'opacity-100'
+                }`}
+                data-testid={`news-card-${index}`}
+              >
                 <CardHeader>
                   <div className="flex items-start justify-between gap-4">
                     <div className="flex-1">
@@ -155,40 +235,40 @@ export default function NewsMonitoring() {
                 <CardContent>
                   {/* Score Metrics */}
                   <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
-                    <div className="text-center p-4 bg-green-50 rounded-lg">
-                      <Heart className="h-8 w-8 text-green-600 mx-auto mb-2" />
+                    <div className="text-center p-4 bg-green-50 rounded-lg transition-all duration-300 hover:shadow-md">
+                      <Heart className="h-8 w-8 text-green-600 mx-auto mb-2 transition-transform duration-200 hover:scale-110" />
                       <div className="text-2xl font-bold text-green-600" data-testid={`sentiment-score-${index}`}>
                         {newsItem.sentimentScore}%
                       </div>
                       <div className="text-sm text-gray-600">Sentiment Score</div>
-                      <Progress value={newsItem.sentimentScore} className="h-2 mt-2" />
+                      <Progress value={newsItem.sentimentScore} className="h-2 mt-2 transition-all duration-500" />
                     </div>
 
-                    <div className="text-center p-4 bg-blue-50 rounded-lg">
-                      <Target className="h-8 w-8 text-blue-600 mx-auto mb-2" />
+                    <div className="text-center p-4 bg-blue-50 rounded-lg transition-all duration-300 hover:shadow-md">
+                      <Target className="h-8 w-8 text-blue-600 mx-auto mb-2 transition-transform duration-200 hover:scale-110" />
                       <div className="text-2xl font-bold text-blue-600" data-testid={`relevance-score-${index}`}>
                         {newsItem.relevanceScore}%
                       </div>
                       <div className="text-sm text-gray-600">Relevance Score</div>
-                      <Progress value={newsItem.relevanceScore} className="h-2 mt-2" />
+                      <Progress value={newsItem.relevanceScore} className="h-2 mt-2 transition-all duration-500" />
                     </div>
 
-                    <div className="text-center p-4 bg-purple-50 rounded-lg">
-                      <Shield className="h-8 w-8 text-purple-600 mx-auto mb-2" />
+                    <div className="text-center p-4 bg-purple-50 rounded-lg transition-all duration-300 hover:shadow-md">
+                      <Shield className="h-8 w-8 text-purple-600 mx-auto mb-2 transition-transform duration-200 hover:scale-110" />
                       <div className="text-2xl font-bold text-purple-600" data-testid={`authority-score-${index}`}>
                         {newsItem.sourceAuthorityScore}%
                       </div>
                       <div className="text-sm text-gray-600">Source Authority</div>
-                      <Progress value={newsItem.sourceAuthorityScore} className="h-2 mt-2" />
+                      <Progress value={newsItem.sourceAuthorityScore} className="h-2 mt-2 transition-all duration-500" />
                     </div>
 
-                    <div className="text-center p-4 bg-orange-50 rounded-lg">
-                      <Users className="h-8 w-8 text-orange-600 mx-auto mb-2" />
+                    <div className="text-center p-4 bg-orange-50 rounded-lg transition-all duration-300 hover:shadow-md">
+                      <Users className="h-8 w-8 text-orange-600 mx-auto mb-2 transition-transform duration-200 hover:scale-110" />
                       <div className="text-2xl font-bold text-orange-600" data-testid={`engagement-score-${index}`}>
                         {newsItem.engagementScore}%
                       </div>
                       <div className="text-sm text-gray-600">Engagement Score</div>
-                      <Progress value={newsItem.engagementScore} className="h-2 mt-2" />
+                      <Progress value={newsItem.engagementScore} className="h-2 mt-2 transition-all duration-500" />
                     </div>
                   </div>
 
