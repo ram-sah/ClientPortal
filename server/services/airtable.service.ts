@@ -39,6 +39,12 @@ export interface AirtableRenderingReport {
   [key: string]: any;
 }
 
+export interface AirtableBrand {
+  id: string;
+  name: string;
+  [key: string]: any;
+}
+
 export interface AirtableNewsMonitoring {
   id: string;
   title: string;
@@ -56,6 +62,9 @@ export interface AirtableNewsMonitoring {
   // Additional fields from linked News Monitor table
   articleUrl: string;
   publicationDate: string;
+  // Brand filtering support
+  brandId?: string;
+  brandName?: string;
   [key: string]: any;
 }
 
@@ -324,14 +333,43 @@ class AirtableService {
     }
   }
 
-  async getNewsMonitoring(): Promise<AirtableNewsMonitoring[]> {
+  async getBrands(): Promise<AirtableBrand[]> {
     try {
-      // Step 1: Get News Scores records
-      const newsScoresRecords = await newsBase('News Scores').select({
+      const records = await newsBase('Brands').select({
+        view: 'Grid view' // Default view
+      }).all();
+
+      return records.map(record => ({
+        id: record.id,
+        name: record.get('Name') as string || '',
+        // Include all other fields dynamically
+        ...Object.fromEntries(
+          Object.entries(record.fields).filter(([key]) => 
+            !['Name', '_createdTime'].includes(key)
+          )
+        )
+      }));
+    } catch (error) {
+      console.error('Error fetching brands from Airtable:', error);
+      throw new Error(`Failed to fetch brands from Airtable: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async getNewsMonitoring(brandId?: string): Promise<AirtableNewsMonitoring[]> {
+    try {
+      // Step 1: Get News Scores records with optional brand filtering
+      let selectOptions: any = {
         view: 'Grid view',
         maxRecords: 4,
         sort: [{ field: '_createdTime', direction: 'desc' }]
-      }).all();
+      };
+
+      // Add brand filtering if brandId is provided
+      if (brandId) {
+        selectOptions.filterByFormula = `SEARCH("${brandId}", ARRAYJOIN({Brands}))`;
+      }
+
+      const newsScoresRecords = await newsBase('News Scores').select(selectOptions).all();
 
       // Step 2: Extract linked News Monitor record IDs
       const newsMonitorIds: string[] = [];
@@ -358,12 +396,17 @@ class AirtableService {
         });
       });
 
-      // Step 5: Combine all original News Scores fields with linked News Monitor data
+      // Step 5: Combine all original News Scores fields with linked News Monitor data  
       return newsScoresRecords.map(record => {
         const newsMonitorLinks = record.get('News Monitor') as string[];
         const linkedNewsMonitor = Array.isArray(newsMonitorLinks) && newsMonitorLinks[0] 
           ? newsMonitorMap.get(newsMonitorLinks[0]) 
           : null;
+
+        // Extract brand information from linked Brands table
+        const brandLinks = record.get('Brands') as string[];
+        const brandId = Array.isArray(brandLinks) && brandLinks[0] ? brandLinks[0] : '';
+        const brandName = record.get('Brand Name') as string || ''; // If brand name is denormalized
 
 
         return {
@@ -383,12 +426,16 @@ class AirtableService {
           // Additional fields from linked News Monitor table
           articleUrl: linkedNewsMonitor?.articleUrl || '',
           publicationDate: linkedNewsMonitor?.publicationDate || '',
+          // Brand information
+          brandId,
+          brandName,
           // Include all other fields dynamically
           ...Object.fromEntries(
             Object.entries(record.fields).filter(([key]) => 
               !['Title', 'URL', 'Category', 'Sentiment Score', 'Relevance Score', 
                 'SourceAuthorityScore', 'EngagementScore', 'TotalScore', 
-                'WeeklyTrendTag', 'RecommendedActions', 'Content Type', '_createdTime', 'News Monitor'].includes(key)
+                'WeeklyTrendTag', 'RecommendedActions', 'Content Type', '_createdTime', 
+                'News Monitor', 'Brands', 'Brand Name'].includes(key)
             )
           )
         };

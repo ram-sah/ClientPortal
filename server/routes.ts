@@ -173,10 +173,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Airtable news monitoring route
+  // Airtable brands route
+  app.get("/api/brands/airtable", requireAuth, async (req, res) => {
+    try {
+      const brands = await airtableService.getBrands();
+      res.json(brands);
+    } catch (error) {
+      res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get brands from Airtable" });
+    }
+  });
+
+  // Airtable news monitoring route with optional brand filtering
   app.get("/api/news-monitoring/airtable", requireAuth, async (req, res) => {
     try {
-      const newsMonitoring = await airtableService.getNewsMonitoring();
+      const brandId = req.query.brandId as string;
+      const newsMonitoring = await airtableService.getNewsMonitoring(brandId);
       res.json(newsMonitoring);
     } catch (error) {
       res.status(400).json({ error: error instanceof Error ? error.message : "Failed to get news monitoring from Airtable" });
